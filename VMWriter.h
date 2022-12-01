@@ -14,6 +14,8 @@ using namespace std;
 
 class VMWriter
 {
+    public:
+    VMWriter();
     VMWriter(ofstream);
     void writePush(string);
     void writePop(string);

@@ -10,6 +10,10 @@
 
 using namespace std;
 
+VMWriter::VMWriter()
+{
+
+}
 VMWriter::VMWriter(ofstream outFile)
 {
     

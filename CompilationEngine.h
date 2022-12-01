@@ -6,6 +6,8 @@
 #include <string>
 #include <iomanip>
 #include "JackTokenizer.h"
+#include "SymbolTable.h"
+#include "VMWriter.h"
 
 using namespace std;
 
@@ -31,6 +33,7 @@ class CompilationEngine{
     ifstream _jackInput;
     ofstream _xmlOutput;
     JackTokenizer myTokenizer;
+    SymbolTable mySymbolTable;
 };
 
 

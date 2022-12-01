@@ -4,6 +4,8 @@
 #include <iomanip>
 #include "CompilationEngine.h"
 #include "JackTokenizer.h"
+#include "SymbolTable.h"
+#include "VMWriter.h"
 
 using namespace std;
 
@@ -11,6 +13,18 @@ using namespace std;
     {
         myTokenizer = JackTokenizer(jackInput);
         _xmlOutput.open(xmlFileName);
+
+        // mySymbolTable.Define("x", "int", "FIELD");
+        // mySymbolTable.Define("y", "string", "FIELD");
+        // mySymbolTable.Define("z", "char", "FIELD");
+        // cout << mySymbolTable.KindOf("x") << endl;
+        // cout << mySymbolTable.TypeOf("y") << endl;
+        // cout << mySymbolTable.TypeOf("z") << endl;
+        // cout << mySymbolTable.VarCount("FIELD") << endl;
+        // cout << mySymbolTable.VarCount("STATIC") << endl;
+        // cout << mySymbolTable.IndexOf("x") << endl;
+        // cout << mySymbolTable.IndexOf("y") << endl;
+        // cout << mySymbolTable.IndexOf("z") << endl;
     }
     void CompilationEngine::compileClass()
     {
