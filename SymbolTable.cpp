@@ -18,11 +18,13 @@ using namespace std;
         numStatics = 0;
         numVars = 0;
     }
-    void SymbolTable::startSubroutine()
+    void SymbolTable::startSubroutine(string className)
     {
         numArgs = 0;
         numVars = 0;
         subroutineScopeVariables.clear();
+        subroutineScopeVariables["this"] = make_tuple(className, "argument", 0); //get<0>(tuple) = className
+        numArgs++;
         return;
     }
     void SymbolTable::Define(string name, string type, string kind)
@@ -69,21 +71,6 @@ using namespace std;
         }
         return 0;
     }
-    string SymbolTable::KindOf(string name)
-    {
-        if (!get<1>(classScopeVariables[name]).empty())
-        {
-            return get<1>(classScopeVariables[name]);
-        }
-        else if(!get<1>(subroutineScopeVariables[name]).empty())
-        {
-            return get<1>(subroutineScopeVariables[name]);
-        }
-        else
-        {
-            return "NONE";
-        }
-    }
     string SymbolTable::TypeOf(string name)
     {
         if (!get<0>(classScopeVariables[name]).empty())
@@ -93,6 +80,21 @@ using namespace std;
         else if(!get<0>(subroutineScopeVariables[name]).empty())
         {
             return get<0>(subroutineScopeVariables[name]);
+        }
+        else
+        {
+            return "NONE";
+        }
+    }
+    string SymbolTable::KindOf(string name)
+    {
+        if (!get<1>(classScopeVariables[name]).empty())
+        {
+            return get<1>(classScopeVariables[name]);
+        }
+        else if(!get<1>(subroutineScopeVariables[name]).empty())
+        {
+            return get<1>(subroutineScopeVariables[name]);
         }
         else
         {
