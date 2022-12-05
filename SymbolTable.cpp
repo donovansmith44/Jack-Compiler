@@ -1,9 +1,6 @@
 #include <iostream>
 #include <string>
-#include <fstream>
 #include <iomanip>
-#include <filesystem>
-#include <vector>
 #include <unordered_map>
 #include "JackTokenizer.h"
 #include "CompilationEngine.h"
@@ -29,47 +26,57 @@ using namespace std;
     }
     void SymbolTable::Define(string name, string type, string kind)
     {
-        if (kind == "STATIC")
+        switch (kind)
         {
+        case "STATIC":
             classScopeVariables[name] = make_tuple(type, kind, numStatics);
             numStatics++;
-        }
-        else if(kind == "FIELD")
-        {
+            break;
+
+        case "FIELD":
             classScopeVariables[name] = make_tuple(type, kind, numFields);
             numFields++;
-        }
-        else if(kind == "ARG")
-        {
+            break;
+
+        case "ARG":
             subroutineScopeVariables[name] = make_tuple(type, kind, numArgs);
             numArgs++;
-        }
-        else if(kind == "VAR")
-        {
+            break;
+
+        case "VAR":
             subroutineScopeVariables[name] = make_tuple(type, kind, numVars);
             numVars++;
+            break;
+
+        default:
+            return;
+            break;
         }
-        return;
     }
     int SymbolTable::VarCount(string kind)
     {
-        if (kind == "STATIC")
+        switch (kind)
         {
+        case "STATIC":
             return numStatics;
-        }
-        else if(kind == "FIELD")
-        {
+            break;
+
+        case "FIELD":
             return numFields;
-        }
-        else if(kind == "ARG")
-        {
+            break;
+
+        case "ARG":
             return numArgs;
-        }
-        else if(kind == "VAR")
-        {
+            break;
+
+        case "VAR":
             return numVars;
+            break;
+
+        default:
+            return 0;
+            break;
         }
-        return 0;
     }
     string SymbolTable::TypeOf(string name)
     {
@@ -111,6 +118,8 @@ using namespace std;
         {
             return get<2>(subroutineScopeVariables[name]);
         }
-        
-        return 0;
+        else
+        {
+            return 0;
+        }
     }
