@@ -52,6 +52,7 @@ using namespace std;
             return;
             break;
         }
+        return;
     }
     int SymbolTable::VarCount(string kind)
     {
