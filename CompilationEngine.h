@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 #include <iomanip>
+#include <vector>
 #include "JackTokenizer.h"
 #include "SymbolTable.h"
 #include "VMWriter.h"
@@ -34,6 +35,13 @@ class CompilationEngine{
     ofstream _xmlOutput;
     JackTokenizer myTokenizer;
     SymbolTable mySymbolTable;
+    VMWriter myVMWriter;
+    string thisClass;
+    string currentFunction;
+    string subroutineType;
+    string currentIdentifier;
+    string currentSymbol;
+    vector<string> currentSymbols;
 };
 
 
