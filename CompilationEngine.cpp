@@ -22,7 +22,7 @@ using namespace std;
         subroutineType = "";
         currentIdentifier = "";
         currentSymbol = "";
-        numLocals = 0;
+        numArgs = 0;
         currentSymbols.clear();
         executeIfLabels = 0;
         executeElseLabels = 0;
@@ -110,6 +110,10 @@ using namespace std;
             //_xmlOutput << "  <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
             myTokenizer.advance();
         }
+        else
+        {
+            /*this shouldn't be possible*/
+        }
 
         //_xmlOutput << "  <identifier> " << myTokenizer.identifier() << " </identifier>" << endl; //name of the function
         currentFunction = myTokenizer.identifier();
@@ -123,21 +127,6 @@ using namespace std;
 
         //_xmlOutput << "  <symbol> " << myTokenizer.symbol() << " </symbol>" << endl; //)
 
-        if (subroutineType == "method")
-        {
-            mySymbolTable.Define("this", thisClass, "ARG");
-            myVMWriter.writeFunction(thisClass + "." + currentFunction, mySymbolTable.VarCount("argument"));
-            myVMWriter.writePush("ARG", 0);
-            myVMWriter.writePop("POINTER", 0);
-        }
-        else if(subroutineType == "function" || subroutineType == "constructor")
-        {
-            myVMWriter.writeFunction(thisClass + "." + currentFunction, mySymbolTable.VarCount("argument"));
-        }
-        else
-        {
-            /*this should not be possible.*/            
-        }
 
         /*compile subroutine body*/
         //_xmlOutput << "  <subroutineBody>" << endl;
@@ -150,6 +139,22 @@ using namespace std;
         {
             compileVarDec();
             myTokenizer.advance();
+        }
+
+        if (subroutineType == "method")
+        {
+            mySymbolTable.Define("this", thisClass, "ARG");
+            myVMWriter.writeFunction(thisClass + "." + currentFunction, mySymbolTable.VarCount("local"));
+            myVMWriter.writePush("argument", 0);
+            myVMWriter.writePop("POINTER", 0);
+        }
+        else if(subroutineType == "function" || subroutineType == "constructor")
+        {
+            myVMWriter.writeFunction(thisClass + "." + currentFunction, mySymbolTable.VarCount("local"));
+        }
+        else
+        {
+            /*this should not be possible.*/            
         }
 
         compileStatements();
@@ -206,6 +211,7 @@ using namespace std;
         myTokenizer.advance();
 
         mySymbolTable.Define(myTokenizer.identifier(), currentVarType, "VAR");
+        cout << myTokenizer.identifier() << endl;
         myTokenizer.advance();
 
         while (myTokenizer.symbol() != ';')
@@ -218,6 +224,7 @@ using namespace std;
             {
                 //_xmlOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>" << endl; var name
                 mySymbolTable.Define(myTokenizer.identifier(), currentVarType, "VAR");
+                cout << myTokenizer.identifier() << endl;
             }
             myTokenizer.advance();
         }
@@ -301,8 +308,10 @@ using namespace std;
 
                     //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ')'
                     myTokenizer.advance();
-                    myVMWriter.writeCall(doIdentifier + "." + doSubroutine, numLocals);
-                    numLocals = 0;
+                    myVMWriter.writeCall(doIdentifier + "." + doSubroutine, numArgs);
+                    numArgs = 0;
+                    myVMWriter.writePop("TEMP", 0);
+                    //myVMWriter.writePush("CONST", 0);
             }
 
             //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ';'
@@ -339,9 +348,9 @@ using namespace std;
 
         compileExpression();
         myTokenizer.advance();
-        cout << "Kind test: " << mySymbolTable.KindOf(varToSet) << endl;
-        cout << "Type test: " << mySymbolTable.TypeOf(varToSet) << endl;
-        cout << "Index test: " << mySymbolTable.IndexOf(varToSet) << endl;
+        // cout << "Kind test: " << mySymbolTable.KindOf(varToSet) << endl;
+        // cout << "Type test: " << mySymbolTable.TypeOf(varToSet) << endl;
+        // cout << "Index test: " << mySymbolTable.IndexOf(varToSet) << endl;
         myVMWriter.writePop(mySymbolTable.KindOf(varToSet), mySymbolTable.IndexOf(varToSet));
 
         //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ';'
@@ -520,7 +529,7 @@ using namespace std;
         if (myTokenizer.tokenType() == "INT_CONST")
         {
           //  _xmlOutput << "      <integerConstant> " << myTokenizer.intVal() << " </integerConstant> " << endl;
-          myVMWriter.writePush("CONST", myTokenizer.intVal());
+            myVMWriter.writePush("CONST", myTokenizer.intVal());
         }
         else if (myTokenizer.tokenType() == "STRING_CONST")
         {
@@ -585,8 +594,8 @@ using namespace std;
                 compileExpressionList();
 
                 //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ')'
-                myVMWriter.writeCall(termIdentifier + "." + currentFunction, numLocals);
-                numLocals = 0;
+                myVMWriter.writeCall(termIdentifier + "." + currentFunction, numArgs);
+                numArgs = 0;
             }
             else
             {
@@ -626,7 +635,7 @@ using namespace std;
         //_xmlOutput << "       <expressionList> " << endl;
         if (myTokenizer.symbol() != ')')
         {
-            numLocals++;
+            numArgs++;
             compileExpression();
             myTokenizer.advance();
            
@@ -638,7 +647,7 @@ using namespace std;
                     myTokenizer.advance();
                     compileExpression();
                     myTokenizer.advance();
-                    numLocals++;
+                    numArgs++;
                 }   
             }
         }

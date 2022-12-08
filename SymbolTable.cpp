@@ -20,32 +20,32 @@ using namespace std;
         numArgs = 0;
         numVars = 0;
         subroutineScopeVariables.clear();
-        subroutineScopeVariables["this"] = make_tuple(currentClassName, "argument", 0);
-        numArgs++;
+        //subroutineScopeVariables["this"] = make_tuple(currentClassName, "argument", 0);
+        //numArgs++;
         return;
     }
     void SymbolTable::Define(string name, string type, string kind)
-    {
+    {   
         if(kind == "STATIC")
         {
-            classScopeVariables[name] = make_tuple(type, kind, numStatics);
+            classScopeVariables[name] = make_tuple(type, "static", numStatics);
             numStatics++;
         }
         else if(kind == "FIELD")
         {
-            classScopeVariables[name] = make_tuple(type, kind, numFields);
+            classScopeVariables[name] = make_tuple(type, "field", numFields);
             numFields++;
         }
         else if(kind == "ARG")
         {
-            subroutineScopeVariables[name] = make_tuple(type, kind, numArgs);
+            subroutineScopeVariables[name] = make_tuple(type, "argument", numArgs);
             numArgs++;
         }
         else if(kind == "VAR")
         {
-            subroutineScopeVariables[name] = make_tuple(type, kind, numVars);
+            subroutineScopeVariables[name] = make_tuple(type, "local", numVars);
             numVars++;
-        }
+        } 
         else
         {
             return;
@@ -55,19 +55,19 @@ using namespace std;
     }
     int SymbolTable::VarCount(string kind)
     {
-        if(kind == "STATIC")
+        if(kind == "static")
         {
             return numStatics;
         }
-        else if(kind == "FIELD")
+        else if(kind == "field")
         {
             return numFields;
         }
-        else if(kind == "ARG")
+        else if(kind == "argument")
         {
             return numArgs;
         }
-        else if(kind == "VAR")
+        else if(kind == "local")
         {
             return numVars;
         }
