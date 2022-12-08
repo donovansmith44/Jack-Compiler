@@ -15,8 +15,7 @@ using namespace std;
         myTokenizer = JackTokenizer(jackInput);
         myVMWriter = VMWriter(vmFileName);
         mySymbolTable = SymbolTable();
-
-        _xmlOutput.open(vmFileName);
+        _vmOutput.open(vmFileName);
         thisClass = "";
         currentFunction = "";
         subroutineType = "";
@@ -33,16 +32,16 @@ using namespace std;
         if (myTokenizer.hasMoreTokens()) //class declaration
         {
                 myTokenizer.advance(); //the first token in the tokenizer should be 'class'
-                //_xmlOutput << "<class>" << endl;
-                //_xmlOutput << " <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
+                //_vmOutput << "<class>" << endl;
+                //_vmOutput << " <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
 
                 myTokenizer.advance(); //token should now be className
                 thisClass = myTokenizer.keyWord(); //setting thisClass to the current class name for reference in subroutine symbol tables
-                //_xmlOutput << " <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
+                //_vmOutput << " <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
 
 
                 myTokenizer.advance(); //{
-                //_xmlOutput << " <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
+                //_vmOutput << " <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
         }
 
         while (myTokenizer.hasMoreTokens())//compile classVarDec and subroutineDec
@@ -61,53 +60,86 @@ using namespace std;
             }            
         }
 
-        //_xmlOutput << " <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
-        //_xmlOutput << "</class>" << endl;
-        _xmlOutput.close();
+        //_vmOutput << " <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
+        //_vmOutput << "</class>" << endl;
+        _vmOutput.close();
         return;
     }
     void CompilationEngine::compileClassVarDec()
     {
-        _xmlOutput << "<classVarDec>" << endl;
-        _xmlOutput << "  <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
+        string classVarType = "";
+        string classVarKind = "";
+        string classVarName = "";
+        //_vmOutput << "<classVarDec>" << endl;
+        //_vmOutput << "  <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
+        classVarKind = myTokenizer.keyWord(); //kind will be field or static
         myTokenizer.advance();
-        while(myTokenizer.symbol() != ';')
+        
+        if (myTokenizer.tokenType() == "KEYWORD") //if the tokenType is a keyword, the type of the static or field variable will be a primitive type (int, boolean, char)
         {
-            if (myTokenizer.tokenType() == "KEYWORD")
-            {
-                _xmlOutput << "  <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
-            }
-            else if(myTokenizer.tokenType() == "IDENTIFIER")
-            {
-                _xmlOutput << "  <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
-            }
-            else if(myTokenizer.symbol() == ',')
-            {
-                _xmlOutput << "  <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
-            }
+            //_vmOutput << "  <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
+            classVarType = myTokenizer.keyWord();
             myTokenizer.advance();
         }
-        _xmlOutput << "  <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
-        _xmlOutput << " </classVarDec>" << endl;
+        else if(myTokenizer.tokenType() == "IDENTIFIER") //if the tokenType is an identifier, then the type of the static or field variable will be a class type.
+        {
+            //_vmOutput << "  <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
+            classVarType = myTokenizer.identifier();
+            myTokenizer.advance();
+        }
+        else
+        {
+
+        }
+
+        while(myTokenizer.symbol() != ';')
+        {
+            if(myTokenizer.tokenType() == "IDENTIFIER")
+            {
+                //_vmOutput << "  <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
+                classVarName = myTokenizer.identifier();
+                mySymbolTable.Define(classVarName, classVarType, classVarKind);
+                // cout << "classVarName: " << classVarName << endl;
+                // cout << "ClassVarType: " << mySymbolTable.TypeOf(classVarName) << endl;
+                // cout << "ClassVarKind: " << mySymbolTable.KindOf(classVarName) << endl;
+                // cout << "ClassVarIndex: " << mySymbolTable.IndexOf(classVarName) << endl;
+                myTokenizer.advance();
+            }
+            else
+            {
+                /*an error should be thrown, because we expected a variable name of type identifier*/
+            }   
+            if(myTokenizer.symbol() == ',') //if we encounter a comma, that means that we should expect more variable names.
+            {
+                //_vmOutput << "  <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
+                myTokenizer.advance();
+                continue;
+            }
+            else if(myTokenizer.symbol() == ';')
+            {
+                break;
+            }
+        }
+        //_vmOutput << "  <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
+        //_vmOutput << " </classVarDec>" << endl;
         return;
     }
     void CompilationEngine::compileSubroutine()
     {
         mySymbolTable.startSubroutine(thisClass);
-        //_xmlOutput << "<subroutineDec>" << endl;
+        //_vmOutput << "<subroutineDec>" << endl;
         subroutineType = myTokenizer.keyWord();
-        //cout << subroutineType << endl;
-        //_xmlOutput << "  <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl; //constructor, function, or method
+        //_vmOutput << "  <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl; //constructor, function, or method
         myTokenizer.advance();
 
         if(myTokenizer.tokenType() == "IDENTIFIER") //the function/constructor will have a return type of 'identifier' 
         {
-            //_xmlOutput << "  <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
+            //_vmOutput << "  <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
             myTokenizer.advance();
         }
         else if (myTokenizer.tokenType() == "KEYWORD") //the function/constructor will have a predefined return type (int, void, char...)
         {
-            //_xmlOutput << "  <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
+            //_vmOutput << "  <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
             myTokenizer.advance();
         }
         else
@@ -115,23 +147,23 @@ using namespace std;
             /*this shouldn't be possible*/
         }
 
-        //_xmlOutput << "  <identifier> " << myTokenizer.identifier() << " </identifier>" << endl; //name of the function
+        //_vmOutput << "  <identifier> " << myTokenizer.identifier() << " </identifier>" << endl; //name of the function
         currentFunction = myTokenizer.identifier();
 
         myTokenizer.advance();
 
-        //_xmlOutput << "  <symbol> " << myTokenizer.symbol() << " </symbol>" << endl; //(
+        //_vmOutput << "  <symbol> " << myTokenizer.symbol() << " </symbol>" << endl; //(
         myTokenizer.advance();
 
         compileParameterList();
 
-        //_xmlOutput << "  <symbol> " << myTokenizer.symbol() << " </symbol>" << endl; //)
+        //_vmOutput << "  <symbol> " << myTokenizer.symbol() << " </symbol>" << endl; //)
 
 
         /*compile subroutine body*/
-        //_xmlOutput << "  <subroutineBody>" << endl;
+        //_vmOutput << "  <subroutineBody>" << endl;
         myTokenizer.advance();
-        //_xmlOutput << "   <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
+        //_vmOutput << "   <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
         
         myTokenizer.advance();
 
@@ -159,82 +191,80 @@ using namespace std;
 
         compileStatements();
 
-        //_xmlOutput << "   <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
-        //_xmlOutput << "  </subroutineBody>" << endl;
-        //_xmlOutput << " </subroutineDec>" << endl;
+        //_vmOutput << "   <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
+        //_vmOutput << "  </subroutineBody>" << endl;
+        //_vmOutput << " </subroutineDec>" << endl;
         return;
     }
     void CompilationEngine::compileParameterList()
     {
-        //_xmlOutput << "   <parameterList> " << endl;
+        //_vmOutput << "   <parameterList> " << endl;
         string parameterType = "";
         string paramID = "";
         while (myTokenizer.symbol() != ')')
         {
             if (myTokenizer.tokenType() == "KEYWORD")
             {
-                //_xmlOutput << "    <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
+                //_vmOutput << "    <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
                 parameterType = myTokenizer.keyWord();
             }
             else if(myTokenizer.tokenType() == "IDENTIFIER")
             {
-                //_xmlOutput << "    <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
+                //_vmOutput << "    <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
                 mySymbolTable.Define(myTokenizer.identifier(), parameterType, "ARG");
             }
             else if(myTokenizer.symbol() == ',')
             {
-                //_xmlOutput << "    <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
+                //_vmOutput << "    <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
             }
             myTokenizer.advance();
         }
-        //_xmlOutput << "   </parameterList> "<< endl;
+        //_vmOutput << "   </parameterList> "<< endl;
         return;
     }
     void CompilationEngine::compileVarDec()
     {
         string currentVarType = "";
-        //_xmlOutput << "    <varDec> " << endl;
-        //_xmlOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl; //var
+        //_vmOutput << "    <varDec> " << endl;
+        //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl; //var
         myTokenizer.advance();
 
         if (myTokenizer.tokenType() == "KEYWORD") //var type will either be a class name or a keyword (int, char, bool)
         {
-            //_xmlOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
+            //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
             currentVarType = myTokenizer.keyWord();
         }
         else if (myTokenizer.tokenType() == "IDENTIFIER")
         {
-            //_xmlOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
+            //_vmOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
             currentVarType = myTokenizer.identifier();
         }
 
         myTokenizer.advance();
 
         mySymbolTable.Define(myTokenizer.identifier(), currentVarType, "VAR");
-        cout << myTokenizer.identifier() << endl;
         myTokenizer.advance();
 
         while (myTokenizer.symbol() != ';')
         {
             if (myTokenizer.tokenType() == "SYMBOL")
             {
-                //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>" << endl; ','
+                //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>" << endl; ','
             }
             else if (myTokenizer.tokenType() == "IDENTIFIER")
             {
-                //_xmlOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>" << endl; var name
+                //_vmOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>" << endl; var name
                 mySymbolTable.Define(myTokenizer.identifier(), currentVarType, "VAR");
-                cout << myTokenizer.identifier() << endl;
             }
             myTokenizer.advance();
         }
-        //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
-        //_xmlOutput << "    </varDec> " << endl;
+        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
+        //_vmOutput << "    </varDec> " << endl;
         return;
     }
     void CompilationEngine::compileStatements()
     {
-        //_xmlOutput << "   <statements> " << endl;
+        //_vmOutput << "   <statements> " << endl;
         while (myTokenizer.symbol() != '}')
         {
             if (myTokenizer.keyWord() == "let") //the currentToken should be ';' after the let statement compiles
@@ -272,95 +302,92 @@ using namespace std;
                 myTokenizer.advance();
             }
         }
-      //  _xmlOutput << "   </statements> " << endl;
+      //  _vmOutput << "   </statements> " << endl;
         return;
     }
     void CompilationEngine::compileDo() 
     {
         string doIdentifier = "";
         string doSubroutine = "";
-        //_xmlOutput << "    <doStatement> " << endl;
+        //_vmOutput << "    <doStatement> " << endl;
         
-        //_xmlOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl; 'do'
+        //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl; 'do'
         myTokenizer.advance();
 
             /*SUBROUTINE CALL*/
             if (myTokenizer.tokenType() == "IDENTIFIER")
             {
-                //_xmlOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>"  << endl; //subroutineName
+                //_vmOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>"  << endl; //subroutineName
                 doIdentifier = myTokenizer.identifier();
                 myTokenizer.advance();
                 
                 if(myTokenizer.symbol() == '.') // '.' subRoutine Name '(' expressionList ')'
                 {
-                    //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '.'
+                    //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '.'
                     myTokenizer.advance();
 
                     doSubroutine = myTokenizer.identifier();
-                    //_xmlOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>"  << endl; //subroutineName
+                    //_vmOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>"  << endl; //subroutineName
                     myTokenizer.advance();
                 }
 
-                    //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '('
+                    //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '('
                     myTokenizer.advance();
                     
                     compileExpressionList();
 
-                    //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ')'
+                    //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ')'
                     myTokenizer.advance();
                     myVMWriter.writeCall(doIdentifier + "." + doSubroutine, numArgs);
-                    numArgs = 0;
                     myVMWriter.writePop("TEMP", 0);
-                    //myVMWriter.writePush("CONST", 0);
+                    numArgs = 0;
             }
 
-            //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ';'
+            //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ';'
             
-            //_xmlOutput << "    </doStatement> " << endl;
+            //_vmOutput << "    </doStatement> " << endl;
         return;
     }
     void CompilationEngine::compileLet()
     {
         string varToSet = "";
-        //_xmlOutput << "    <letStatement> " << endl;
+        //_vmOutput << "    <letStatement> " << endl;
         
-        //_xmlOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
+        //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
         myTokenizer.advance();
             
-        //_xmlOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>"  << endl; //subroutineName
+        //_vmOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>"  << endl; //subroutineName
         varToSet = myTokenizer.identifier();
         myTokenizer.advance();
 
         if (myTokenizer.symbol() == '[')
         {
-        //    _xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '['
+        //    _vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '['
             myTokenizer.advance();
 
             compileExpression();
             myTokenizer.advance();
             
-        //    _xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ']'
+        //    _vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ']'
             myTokenizer.advance();
         }
         
-        //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '='
+        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '='
         myTokenizer.advance();
 
         compileExpression();
         myTokenizer.advance();
-        // cout << "Kind test: " << mySymbolTable.KindOf(varToSet) << endl;
-        // cout << "Type test: " << mySymbolTable.TypeOf(varToSet) << endl;
-        // cout << "Index test: " << mySymbolTable.IndexOf(varToSet) << endl;
+
         myVMWriter.writePop(mySymbolTable.KindOf(varToSet), mySymbolTable.IndexOf(varToSet));
 
-        //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ';'
+        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ';'
 
-        //_xmlOutput << "    </letStatement> " << endl;
+        //_vmOutput << "    </letStatement> " << endl;
         return;
     }
     void CompilationEngine::compileWhile()
     {
-        //_xmlOutput << "    <whileStatement> " << endl;
+        //_vmOutput << "    <whileStatement> " << endl;
         string currentContinueWhileLabel = "L" + to_string(whileLabels);
         whileLabels++;
 
@@ -368,10 +395,10 @@ using namespace std;
         whileLabels++;
 
         myVMWriter.writeLabel(currentContinueWhileLabel);
-        //_xmlOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
+        //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
         myTokenizer.advance();
 
-        //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '('
+        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '('
         myTokenizer.advance();
 
         compileExpression();
@@ -379,11 +406,11 @@ using namespace std;
         myVMWriter.writeIf(currentExitWhileLabel);
 
         myTokenizer.advance();
-        //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ')'
+        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ')'
 
         myTokenizer.advance();
 
-        //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '{'
+        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '{'
 
         compileStatements();
 
@@ -391,16 +418,16 @@ using namespace std;
 
         myVMWriter.writeLabel(currentExitWhileLabel);
 
-        //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '}'
+        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '}'
         
-        //_xmlOutput << "    </whileStatement> " << endl;
+        //_vmOutput << "    </whileStatement> " << endl;
         return;
     }
     void CompilationEngine::compileReturn()
     {
-        //_xmlOutput << "    <returnStatement> " << endl;
+        //_vmOutput << "    <returnStatement> " << endl;
         
-        //_xmlOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
+        //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
         myTokenizer.advance();
         if (myTokenizer.symbol() != ';')
         {
@@ -412,9 +439,9 @@ using namespace std;
             myVMWriter.writePush("CONST", 0);
         }
         myVMWriter.writeReturn();
-        //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ';'
+        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ';'
 
-        //_xmlOutput << "    </returnStatement> " << endl;
+        //_vmOutput << "    </returnStatement> " << endl;
         return;
     }
     void CompilationEngine::compileIf()
@@ -423,12 +450,12 @@ using namespace std;
         executeIfLabels++;
         string executeElse = "else" + to_string(executeElseLabels);
         executeElseLabels++;
-        //_xmlOutput << "    <ifStatement> " << endl;
+        //_vmOutput << "    <ifStatement> " << endl;
         
-        //_xmlOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
+        //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
         myTokenizer.advance();
 
-        //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '('
+        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '('
         myTokenizer.advance();
 
         compileExpression();
@@ -436,40 +463,38 @@ using namespace std;
         myVMWriter.writeArithmetic("not");
         myVMWriter.writeIf(executeElse);
 
-        //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ')'
+        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ')'
         myTokenizer.advance();
 
-        //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '{'
+        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '{'
         myTokenizer.advance();
 
         compileStatements();
         myVMWriter.writeGoto(executeIf);
 
-        //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '}'
+        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '}'
         myTokenizer.advance();
 
         if (myTokenizer.keyWord() == "else")
         {
             myVMWriter.writeLabel(executeElse);
-            //_xmlOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
+            //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
             myTokenizer.advance();
             
-            //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '{'
+            //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '{'
             myTokenizer.advance();
 
             compileStatements();
 
-            //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '}'
+            //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '}'
             myTokenizer.advance();
         }
         myVMWriter.writeLabel(executeIf);
-        //_xmlOutput << "    </ifStatement> " << endl;
+        //_vmOutput << "    </ifStatement> " << endl;
         return;
     }
     void CompilationEngine::compileExpression()
     {
-       // _xmlOutput << "      <expression> " << endl;
-        
         compileTerm();
         
         if (myTokenizer.getNextToken() == "+" | myTokenizer.getNextToken() == "-" | myTokenizer.getNextToken() == "*" | myTokenizer.getNextToken() == "/" | myTokenizer.getNextToken() == "&" | myTokenizer.getNextToken() == "|" | myTokenizer.getNextToken() == "<" | myTokenizer.getNextToken() == ">" | myTokenizer.getNextToken() == "=")
@@ -517,7 +542,6 @@ using namespace std;
             }
             currentSymbols.pop_back();
         }
-        //_xmlOutput << "      </expression> " << endl;
         return;
     }
 
@@ -525,10 +549,10 @@ using namespace std;
     {
         string tempToken = "";
         string termIdentifier = "";
-        //_xmlOutput << "       <term> " << endl;
+
         if (myTokenizer.tokenType() == "INT_CONST")
         {
-          //  _xmlOutput << "      <integerConstant> " << myTokenizer.intVal() << " </integerConstant> " << endl;
+          //  _vmOutput << "      <integerConstant> " << myTokenizer.intVal() << " </integerConstant> " << endl;
             myVMWriter.writePush("CONST", myTokenizer.intVal());
         }
         else if (myTokenizer.tokenType() == "STRING_CONST")
@@ -542,58 +566,59 @@ using namespace std;
             {
                 tempToken.erase(tempToken.find('"'));
             }
-            _xmlOutput << "      <stringConstant> " << tempToken << " </stringConstant> " << endl;
+            _vmOutput << "      <stringConstant> " << tempToken << " </stringConstant> " << endl;
         }
         else if (myTokenizer.keyWord() == "false" | myTokenizer.keyWord() == "null")
         {
-            //_xmlOutput << "      <keyword> " << myTokenizer.keyWord() << " </keyword> " << endl;
+            //_vmOutput << "      <keyword> " << myTokenizer.keyWord() << " </keyword> " << endl;
             myVMWriter.writePush("CONST", 0);
         }
         else if (myTokenizer.keyWord() == "true")
         {
-            //_xmlOutput << "      <keyword> " << myTokenizer.keyWord() << " </keyword> " << endl;
+            //_vmOutput << "      <keyword> " << myTokenizer.keyWord() << " </keyword> " << endl;
             myVMWriter.writePush("CONST", 1);
             myVMWriter.writeArithmetic("neg");
         }
         else if (myTokenizer.keyWord() == "this" )
         {
-            //_xmlOutput << "      <keyword> " << myTokenizer.keyWord() << " </keyword> " << endl;
+            //_vmOutput << "      <keyword> " << myTokenizer.keyWord() << " </keyword> " << endl;
+            myVMWriter.writePush("THIS", 0);
         }
         else if (myTokenizer.tokenType() == "IDENTIFIER")
         {
-            //_xmlOutput << "      <identifier> " << myTokenizer.identifier() << " </identifier> " << endl;
+            //_vmOutput << "      <identifier> " << myTokenizer.identifier() << " </identifier> " << endl;
             termIdentifier = myTokenizer.identifier();
 
             if (myTokenizer.getNextToken() == "[" | myTokenizer.getNextToken() == "(") //array or variable
             {
                 myTokenizer.advance();
                 
-                //_xmlOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl; // '(' | '['
+                //_vmOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl; // '(' | '['
                 myTokenizer.advance();
 
                 compileExpression();
 
                 myTokenizer.advance();
                 
-                //_xmlOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl; // ')' | ']'
+                //_vmOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl; // ')' | ']'
             }
             else if(myTokenizer.getNextToken() == ".") //subroutineCall
             {
                 myTokenizer.advance();
-                //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '.'
+                //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '.'
                 myTokenizer.advance();
 
-                //_xmlOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>"  << endl; //subroutineName
+                //_vmOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>"  << endl; //subroutineName
                 currentFunction = myTokenizer.identifier();
                 myTokenizer.advance();
             
 
-                //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '('
+                //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '('
                 myTokenizer.advance();
                 
                 compileExpressionList();
 
-                //_xmlOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ')'
+                //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ')'
                 myVMWriter.writeCall(termIdentifier + "." + currentFunction, numArgs);
                 numArgs = 0;
             }
@@ -604,11 +629,14 @@ using namespace std;
         }
         else if (myTokenizer.symbol() == '-' || myTokenizer.symbol() == '~') //unaryop term
         {
-           // _xmlOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl;
-            currentSymbol = myTokenizer.symbol();
+           // _vmOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl;
+            string currentOp = ""; 
+
+            currentOp = myTokenizer.symbol();
             myTokenizer.advance();
+
             compileTerm();
-            if (currentSymbol == "-")
+            if (currentOp == "-")
             {
                 myVMWriter.writeArithmetic("neg");
             }
@@ -620,19 +648,17 @@ using namespace std;
         }
         else if (myTokenizer.symbol() == '(') //'(' expression ')'
         {
-         //   _xmlOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl;
+         //   _vmOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl;
             myTokenizer.advance();
             compileExpression();
             myTokenizer.advance();
-           // _xmlOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl;
+           // _vmOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl;
         }        
-       // _xmlOutput << "       </term>" << endl;
         
         return;
     }
     void CompilationEngine::compileExpressionList()
     {
-        //_xmlOutput << "       <expressionList> " << endl;
         if (myTokenizer.symbol() != ')')
         {
             numArgs++;
@@ -643,7 +669,7 @@ using namespace std;
             {
                 if (myTokenizer.symbol() == ',')
                 {
-          //          _xmlOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl;
+          //          _vmOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl;
                     myTokenizer.advance();
                     compileExpression();
                     myTokenizer.advance();
@@ -651,6 +677,5 @@ using namespace std;
                 }   
             }
         }
-        //_xmlOutput << "      </expressionList>" << endl;
         return;
     }

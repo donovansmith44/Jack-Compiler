@@ -26,12 +26,12 @@ using namespace std;
     }
     void SymbolTable::Define(string name, string type, string kind)
     {   
-        if(kind == "STATIC")
+        if(kind == "static")
         {
             classScopeVariables[name] = make_tuple(type, "static", numStatics);
             numStatics++;
         }
-        else if(kind == "FIELD")
+        else if(kind == "field")
         {
             classScopeVariables[name] = make_tuple(type, "field", numFields);
             numFields++;
