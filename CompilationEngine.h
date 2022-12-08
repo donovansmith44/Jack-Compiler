@@ -42,6 +42,10 @@ class CompilationEngine{
     string currentIdentifier;
     string currentSymbol;
     vector<string> currentSymbols;
+    int numLocals;
+    int whileLabels;
+    int executeIfLabels;
+    int executeElseLabels;
 };
 
 
