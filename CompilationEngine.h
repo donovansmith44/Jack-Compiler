@@ -32,7 +32,7 @@ class CompilationEngine{
     void compileExpressionList();
     private:
     ifstream _jackInput;
-    ofstream _xmlOutput;
+    ofstream _vmOutput;
     JackTokenizer myTokenizer;
     SymbolTable mySymbolTable;
     VMWriter myVMWriter;
@@ -42,6 +42,7 @@ class CompilationEngine{
     string currentIdentifier;
     string currentSymbol;
     vector<string> currentSymbols;
+    string currentSubroutineReturnType;
     int numArgs;
     int whileLabels;
     int executeIfLabels;

@@ -29,8 +29,8 @@ using namespace std;
     }
     void CompilationEngine::compileClass()
     {
-        if (myTokenizer.hasMoreTokens()) //class declaration
-        {
+        //if (myTokenizer.hasMoreTokens()) //class declaration
+        //{
                 myTokenizer.advance(); //the first token in the tokenizer should be 'class'
                 //_vmOutput << "<class>" << endl;
                 //_vmOutput << " <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
@@ -42,7 +42,7 @@ using namespace std;
 
                 myTokenizer.advance(); //{
                 //_vmOutput << " <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
-        }
+        //}
 
         while (myTokenizer.hasMoreTokens())//compile classVarDec and subroutineDec
         {
@@ -57,11 +57,13 @@ using namespace std;
                 {
                     compileSubroutine();
                 }
+                else
+                {
+                    /*We have reached the end of the jack file.*/
+                }
             }            
         }
 
-        //_vmOutput << " <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
-        //_vmOutput << "</class>" << endl;
         _vmOutput.close();
         return;
     }
@@ -70,20 +72,17 @@ using namespace std;
         string classVarType = "";
         string classVarKind = "";
         string classVarName = "";
-        //_vmOutput << "<classVarDec>" << endl;
-        //_vmOutput << "  <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
+
         classVarKind = myTokenizer.keyWord(); //kind will be field or static
         myTokenizer.advance();
         
         if (myTokenizer.tokenType() == "KEYWORD") //if the tokenType is a keyword, the type of the static or field variable will be a primitive type (int, boolean, char)
         {
-            //_vmOutput << "  <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
             classVarType = myTokenizer.keyWord();
             myTokenizer.advance();
         }
         else if(myTokenizer.tokenType() == "IDENTIFIER") //if the tokenType is an identifier, then the type of the static or field variable will be a class type.
         {
-            //_vmOutput << "  <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
             classVarType = myTokenizer.identifier();
             myTokenizer.advance();
         }
@@ -96,22 +95,17 @@ using namespace std;
         {
             if(myTokenizer.tokenType() == "IDENTIFIER")
             {
-                //_vmOutput << "  <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
                 classVarName = myTokenizer.identifier();
                 mySymbolTable.Define(classVarName, classVarType, classVarKind);
-                // cout << "classVarName: " << classVarName << endl;
-                // cout << "ClassVarType: " << mySymbolTable.TypeOf(classVarName) << endl;
-                // cout << "ClassVarKind: " << mySymbolTable.KindOf(classVarName) << endl;
-                // cout << "ClassVarIndex: " << mySymbolTable.IndexOf(classVarName) << endl;
                 myTokenizer.advance();
             }
             else
             {
                 /*an error should be thrown, because we expected a variable name of type identifier*/
-            }   
+            }
+
             if(myTokenizer.symbol() == ',') //if we encounter a comma, that means that we should expect more variable names.
             {
-                //_vmOutput << "  <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
                 myTokenizer.advance();
                 continue;
             }
@@ -119,54 +113,54 @@ using namespace std;
             {
                 break;
             }
+            else
+            {
+
+            }
         }
-        //_vmOutput << "  <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
-        //_vmOutput << " </classVarDec>" << endl;
+
         return;
     }
     void CompilationEngine::compileSubroutine()
     {
         mySymbolTable.startSubroutine(thisClass);
-        //_vmOutput << "<subroutineDec>" << endl;
-        subroutineType = myTokenizer.keyWord();
-        //_vmOutput << "  <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl; //constructor, function, or method
+
+        subroutineType = myTokenizer.keyWord(); //subroutineType is constructor, function, or method
+         
         myTokenizer.advance();
 
         if(myTokenizer.tokenType() == "IDENTIFIER") //the function/constructor will have a return type of 'identifier' 
         {
             //_vmOutput << "  <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
+            currentSubroutineReturnType = myTokenizer.identifier();
             myTokenizer.advance();
         }
         else if (myTokenizer.tokenType() == "KEYWORD") //the function/constructor will have a predefined return type (int, void, char...)
         {
             //_vmOutput << "  <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
+            currentSubroutineReturnType = myTokenizer.keyWord();
             myTokenizer.advance();
         }
         else
         {
             /*this shouldn't be possible*/
         }
+        
+        /* 'functionName' '(' 'parameterList' ')' */
+        currentFunction = myTokenizer.identifier(); //name of the function
 
-        //_vmOutput << "  <identifier> " << myTokenizer.identifier() << " </identifier>" << endl; //name of the function
-        currentFunction = myTokenizer.identifier();
+        myTokenizer.advance(); // '('
 
-        myTokenizer.advance();
-
-        //_vmOutput << "  <symbol> " << myTokenizer.symbol() << " </symbol>" << endl; //(
-        myTokenizer.advance();
+        myTokenizer.advance(); // ')' or some parameter is the current token here. if it's a ')', compileParameterList does not advance the tokenizer past that token.
 
         compileParameterList();
 
-        //_vmOutput << "  <symbol> " << myTokenizer.symbol() << " </symbol>" << endl; //)
-
+        myTokenizer.advance(); // ')'
 
         /*compile subroutine body*/
-        //_vmOutput << "  <subroutineBody>" << endl;
-        myTokenizer.advance();
-        //_vmOutput << "   <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
-        
-        myTokenizer.advance();
 
+        myTokenizer.advance(); // '{'
+        
         while (myTokenizer.keyWord() == "var")
         {
             compileVarDec();
@@ -180,7 +174,11 @@ using namespace std;
             myVMWriter.writePush("argument", 0);
             myVMWriter.writePop("POINTER", 0);
         }
-        else if(subroutineType == "function" || subroutineType == "constructor")
+        else if(subroutineType == "function")
+        {
+            myVMWriter.writeFunction(thisClass + "." + currentFunction, mySymbolTable.VarCount("local"));
+        }
+        else if(subroutineType == "constructor")
         {
             myVMWriter.writeFunction(thisClass + "." + currentFunction, mySymbolTable.VarCount("local"));
         }
@@ -191,52 +189,48 @@ using namespace std;
 
         compileStatements();
 
-        //_vmOutput << "   <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
-        //_vmOutput << "  </subroutineBody>" << endl;
-        //_vmOutput << " </subroutineDec>" << endl;
         return;
     }
     void CompilationEngine::compileParameterList()
     {
-        //_vmOutput << "   <parameterList> " << endl;
         string parameterType = "";
         string paramID = "";
+
         while (myTokenizer.symbol() != ')')
         {
             if (myTokenizer.tokenType() == "KEYWORD")
             {
                 //_vmOutput << "    <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
                 parameterType = myTokenizer.keyWord();
+                //cout << "Keyword: " << myTokenizer.keyWord() << endl;
             }
             else if(myTokenizer.tokenType() == "IDENTIFIER")
             {
                 //_vmOutput << "    <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
                 mySymbolTable.Define(myTokenizer.identifier(), parameterType, "ARG");
+                //cout << "Identifier: " << myTokenizer.identifier() << endl;
             }
             else if(myTokenizer.symbol() == ',')
             {
                 //_vmOutput << "    <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
+                //cout << "Symbol: " << myTokenizer.symbol() << endl;
             }
             myTokenizer.advance();
         }
-        //_vmOutput << "   </parameterList> "<< endl;
         return;
     }
     void CompilationEngine::compileVarDec()
     {
         string currentVarType = "";
-        //_vmOutput << "    <varDec> " << endl;
-        //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl; //var
-        myTokenizer.advance();
+
+        myTokenizer.advance(); // var
 
         if (myTokenizer.tokenType() == "KEYWORD") //var type will either be a class name or a keyword (int, char, bool)
         {
-            //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
             currentVarType = myTokenizer.keyWord();
         }
         else if (myTokenizer.tokenType() == "IDENTIFIER")
         {
-            //_vmOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
             currentVarType = myTokenizer.identifier();
         }
 
@@ -307,57 +301,71 @@ using namespace std;
     }
     void CompilationEngine::compileDo() 
     {
-        string doIdentifier = "";
-        string doSubroutine = "";
-        //_vmOutput << "    <doStatement> " << endl;
-        
-        //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl; 'do'
+        string subroutineCaller = "";
+        string subroutineCallerType = "";
+        string subroutine = "";
+
         myTokenizer.advance();
 
-            /*SUBROUTINE CALL*/
-            if (myTokenizer.tokenType() == "IDENTIFIER")
+        if (myTokenizer.tokenType() == "IDENTIFIER")
+        {
+            subroutineCaller = myTokenizer.identifier();
+
+            if (mySymbolTable.TypeOf(subroutineCaller) != "NONE") //if the type of the subroutineCaller is not "NONE", then that means that the subroutineCaller is an object, with a type corresponding to its respective class.
             {
-                //_vmOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>"  << endl; //subroutineName
-                doIdentifier = myTokenizer.identifier();
-                myTokenizer.advance();
-                
-                if(myTokenizer.symbol() == '.') // '.' subRoutine Name '(' expressionList ')'
-                {
-                    //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '.'
-                    myTokenizer.advance();
-
-                    doSubroutine = myTokenizer.identifier();
-                    //_vmOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>"  << endl; //subroutineName
-                    myTokenizer.advance();
-                }
-
-                    //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '('
-                    myTokenizer.advance();
-                    
-                    compileExpressionList();
-
-                    //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ')'
-                    myTokenizer.advance();
-                    myVMWriter.writeCall(doIdentifier + "." + doSubroutine, numArgs);
-                    myVMWriter.writePop("TEMP", 0);
-                    numArgs = 0;
+                subroutineCallerType = mySymbolTable.TypeOf(subroutineCaller);
+                myVMWriter.writePush(mySymbolTable.KindOf(subroutineCaller), mySymbolTable.VarCount(subroutineCaller)); //the object being operated on is a caller argument, and must be pushed onto the stack
+                numArgs++;
+            }
+            else //this condition will handle the types of subroutineCallers that are predefined by the OS
+            {
+                subroutineCallerType = myTokenizer.identifier();
             }
 
-            //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ';'
+            myTokenizer.advance();
             
-            //_vmOutput << "    </doStatement> " << endl;
+            if(myTokenizer.symbol() == '.') // '.' subRoutine Name
+            {
+                myTokenizer.advance();
+
+                subroutine = myTokenizer.identifier();
+                
+                myTokenizer.advance();
+            }
+            else
+            {
+                /*This should not be possible. do statements always have a caller.*/
+            }
+                
+            myTokenizer.advance(); // '('
+            
+            compileExpressionList();
+
+            myTokenizer.advance(); // ')'
+
+            myVMWriter.writeCall(subroutineCallerType + "." + subroutine, numArgs);
+            myVMWriter.writePop("TEMP", 0);
+            numArgs = 0; //all arguments pushed onto the stack should be eaten up by the called function, therefore we reset the number of arguments to 0 after every function call.
+        }
+        else
+        {
+            /*This should not be possible. We expect an identifier (which is the object that calls the subroutine) immediately following 'do' in our tokenizer.*/
+        }
+
         return;
     }
     void CompilationEngine::compileLet()
     {
         string varToSet = "";
-        //_vmOutput << "    <letStatement> " << endl;
-        
+
         //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
+        //cout << myTokenizer.keyWord() << endl;
         myTokenizer.advance();
-            
+
+        //cout << myTokenizer.identifier() << endl;
         //_vmOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>"  << endl; //subroutineName
         varToSet = myTokenizer.identifier();
+
         myTokenizer.advance();
 
         if (myTokenizer.symbol() == '[')
@@ -382,7 +390,6 @@ using namespace std;
 
         //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ';'
 
-        //_vmOutput << "    </letStatement> " << endl;
         return;
     }
     void CompilationEngine::compileWhile()
@@ -425,8 +432,6 @@ using namespace std;
     }
     void CompilationEngine::compileReturn()
     {
-        //_vmOutput << "    <returnStatement> " << endl;
-        
         //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
         myTokenizer.advance();
         if (myTokenizer.symbol() != ';')
@@ -440,8 +445,6 @@ using namespace std;
         }
         myVMWriter.writeReturn();
         //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ';'
-
-        //_vmOutput << "    </returnStatement> " << endl;
         return;
     }
     void CompilationEngine::compileIf()
@@ -547,79 +550,81 @@ using namespace std;
 
     void CompilationEngine::compileTerm()
     {
-        string tempToken = "";
         string termIdentifier = "";
 
         if (myTokenizer.tokenType() == "INT_CONST")
         {
-          //  _vmOutput << "      <integerConstant> " << myTokenizer.intVal() << " </integerConstant> " << endl;
             myVMWriter.writePush("CONST", myTokenizer.intVal());
         }
         else if (myTokenizer.tokenType() == "STRING_CONST")
         {
-            tempToken = myTokenizer.stringVal();
-            if(tempToken.find('"') != string::npos) //string constants are identified with a opening and closing '"'. Remove them for compilation
+            string stringConstant = myTokenizer.stringVal();
+
+            if(stringConstant.find('"') != string::npos) //string constants are identified with opening and closing '"' during tokenization. Remove them for compilation.
             {
-                tempToken.erase(tempToken.find('"'));
+                stringConstant.erase(stringConstant.find('"'));
             }
-            if(tempToken.find('"') != string::npos)
+            else
             {
-                tempToken.erase(tempToken.find('"'));
+
             }
-            _vmOutput << "      <stringConstant> " << tempToken << " </stringConstant> " << endl;
+
+            if(stringConstant.find('"') != string::npos)
+            {
+                stringConstant.erase(stringConstant.find('"'));
+            }
+            else
+            {
+
+            }
         }
         else if (myTokenizer.keyWord() == "false" | myTokenizer.keyWord() == "null")
         {
-            //_vmOutput << "      <keyword> " << myTokenizer.keyWord() << " </keyword> " << endl;
             myVMWriter.writePush("CONST", 0);
         }
         else if (myTokenizer.keyWord() == "true")
         {
-            //_vmOutput << "      <keyword> " << myTokenizer.keyWord() << " </keyword> " << endl;
             myVMWriter.writePush("CONST", 1);
             myVMWriter.writeArithmetic("neg");
         }
         else if (myTokenizer.keyWord() == "this" )
         {
             //_vmOutput << "      <keyword> " << myTokenizer.keyWord() << " </keyword> " << endl;
-            myVMWriter.writePush("THIS", 0);
+            //do we assume that pointer is already set?
+            //YES, because when we declare a method, this is defined as argument 0 in our symbol table, and 
+            myVMWriter.writePush("POINTER", 0);
         }
         else if (myTokenizer.tokenType() == "IDENTIFIER")
         {
-            //_vmOutput << "      <identifier> " << myTokenizer.identifier() << " </identifier> " << endl;
             termIdentifier = myTokenizer.identifier();
 
             if (myTokenizer.getNextToken() == "[" | myTokenizer.getNextToken() == "(") //array or variable
             {
                 myTokenizer.advance();
                 
-                //_vmOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl; // '(' | '['
-                myTokenizer.advance();
+                myTokenizer.advance(); // '(' or '['
 
                 compileExpression();
 
-                myTokenizer.advance();
-                
-                //_vmOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl; // ')' | ']'
+                myTokenizer.advance(); // ')' or ']'
             }
             else if(myTokenizer.getNextToken() == ".") //subroutineCall
             {
-                myTokenizer.advance();
-                //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '.'
-                myTokenizer.advance();
+                string subroutine = "";
+                myTokenizer.advance(); // '.'
 
-                //_vmOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>"  << endl; //subroutineName
-                currentFunction = myTokenizer.identifier();
-                myTokenizer.advance();
-            
+                myTokenizer.advance(); // subroutineName
 
-                //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '('
-                myTokenizer.advance();
+                subroutine = myTokenizer.identifier();
+
+                myTokenizer.advance();            
+
+                myTokenizer.advance(); // '('
                 
                 compileExpressionList();
+                                       // ')'
 
-                //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ')'
-                myVMWriter.writeCall(termIdentifier + "." + currentFunction, numArgs);
+                myVMWriter.writeCall(termIdentifier + "." + subroutine, numArgs);
                 numArgs = 0;
             }
             else
@@ -629,14 +634,13 @@ using namespace std;
         }
         else if (myTokenizer.symbol() == '-' || myTokenizer.symbol() == '~') //unaryop term
         {
-           // _vmOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl;
-            string currentOp = ""; 
+            string currentUnaryOp = ""; 
 
-            currentOp = myTokenizer.symbol();
+            currentUnaryOp = myTokenizer.symbol();
             myTokenizer.advance();
 
             compileTerm();
-            if (currentOp == "-")
+            if (currentUnaryOp == "-")
             {
                 myVMWriter.writeArithmetic("neg");
             }
@@ -648,13 +652,15 @@ using namespace std;
         }
         else if (myTokenizer.symbol() == '(') //'(' expression ')'
         {
-         //   _vmOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl;
-            myTokenizer.advance();
+            myTokenizer.advance(); // '('
             compileExpression();
-            myTokenizer.advance();
-           // _vmOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl;
+            myTokenizer.advance(); // ')'
+        }
+        else
+        {
+
         }        
-        
+
         return;
     }
     void CompilationEngine::compileExpressionList()
@@ -669,12 +675,15 @@ using namespace std;
             {
                 if (myTokenizer.symbol() == ',')
                 {
-          //          _vmOutput << "      <symbol> " << myTokenizer.symbol() << " </symbol> " << endl;
                     myTokenizer.advance();
                     compileExpression();
                     myTokenizer.advance();
                     numArgs++;
                 }   
+                else
+                {
+
+                }
             }
         }
         return;
