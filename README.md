@@ -1,6 +1,6 @@
 # Jack-Compiler
 
-The purpose of this compiler is to translate programs written in the Jack programming language (which resembles Java and C#) 
+The purpose of this compiler is to translate programs written in the Jack programming language
 into low-level byte code, resembling that of the JVM.
  
 To compile:
