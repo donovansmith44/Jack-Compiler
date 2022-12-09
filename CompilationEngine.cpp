@@ -181,6 +181,9 @@ using namespace std;
         else if(subroutineType == "constructor")
         {
             myVMWriter.writeFunction(thisClass + "." + currentFunction, mySymbolTable.VarCount("local"));
+            myVMWriter.writePush("CONST", mySymbolTable.VarCount("field"));
+            myVMWriter.writeCall("Memory.alloc", 1);
+            myVMWriter.writePop("POINTER", 0);
         }
         else
         {
@@ -200,20 +203,15 @@ using namespace std;
         {
             if (myTokenizer.tokenType() == "KEYWORD")
             {
-                //_vmOutput << "    <keyword> " << myTokenizer.keyWord() << " </keyword>" << endl;
                 parameterType = myTokenizer.keyWord();
-                //cout << "Keyword: " << myTokenizer.keyWord() << endl;
             }
             else if(myTokenizer.tokenType() == "IDENTIFIER")
             {
-                //_vmOutput << "    <identifier> " << myTokenizer.identifier() << " </identifier>" << endl;
                 mySymbolTable.Define(myTokenizer.identifier(), parameterType, "ARG");
-                //cout << "Identifier: " << myTokenizer.identifier() << endl;
             }
             else if(myTokenizer.symbol() == ',')
             {
-                //_vmOutput << "    <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
-                //cout << "Symbol: " << myTokenizer.symbol() << endl;
+                /*This means that we have another argument in the parameter list*/
             }
             myTokenizer.advance();
         }
@@ -314,8 +312,16 @@ using namespace std;
             if (mySymbolTable.TypeOf(subroutineCaller) != "NONE") //if the type of the subroutineCaller is not "NONE", then that means that the subroutineCaller is an object, with a type corresponding to its respective class.
             {
                 subroutineCallerType = mySymbolTable.TypeOf(subroutineCaller);
-                myVMWriter.writePush(mySymbolTable.KindOf(subroutineCaller), mySymbolTable.VarCount(subroutineCaller)); //the object being operated on is a caller argument, and must be pushed onto the stack
-                numArgs++;
+                if (mySymbolTable.KindOf(subroutineCaller) == "field")
+                {
+                    myVMWriter.writePush("THIS", mySymbolTable.VarCount(subroutineCaller)); //the object being operated on is a caller argument, and must be pushed onto the stack
+                    numArgs++;
+                }
+                else
+                {
+                    myVMWriter.writePush(mySymbolTable.KindOf(subroutineCaller), mySymbolTable.VarCount(subroutineCaller)); //the object being operated on is a caller argument, and must be pushed onto the stack
+                    numArgs++;
+                }
             }
             else //this condition will handle the types of subroutineCallers that are predefined by the OS
             {
@@ -342,8 +348,17 @@ using namespace std;
             compileExpressionList();
 
             myTokenizer.advance(); // ')'
+            if (subroutine != "")
+            {
+                myVMWriter.writeCall(subroutineCallerType + "." + subroutine, numArgs);
+            }
+            else
+            {
+                myVMWriter.writePush("POINTER", 0);
+                numArgs++;
+                myVMWriter.writeCall(thisClass + "." + subroutineCallerType, numArgs);
+            }
 
-            myVMWriter.writeCall(subroutineCallerType + "." + subroutine, numArgs);
             myVMWriter.writePop("TEMP", 0);
             numArgs = 0; //all arguments pushed onto the stack should be eaten up by the called function, therefore we reset the number of arguments to 0 after every function call.
         }
@@ -385,10 +400,14 @@ using namespace std;
 
         compileExpression();
         myTokenizer.advance();
-
-        myVMWriter.writePop(mySymbolTable.KindOf(varToSet), mySymbolTable.IndexOf(varToSet));
-
-        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ';'
+        if (mySymbolTable.KindOf(varToSet) == "field")
+        {
+            myVMWriter.writePop("THIS", mySymbolTable.IndexOf(varToSet));
+        }
+        else
+        {
+            myVMWriter.writePop(mySymbolTable.KindOf(varToSet), mySymbolTable.IndexOf(varToSet));
+        }
 
         return;
     }
@@ -449,12 +468,11 @@ using namespace std;
     }
     void CompilationEngine::compileIf()
     {
-        string executeIf = "if" + to_string(executeIfLabels);
+        string IF_TRUE = "IF_TRUE" + to_string(executeIfLabels);
         executeIfLabels++;
-        string executeElse = "else" + to_string(executeElseLabels);
+        string IF_FALSE = "IF_FALSE" + to_string(executeElseLabels);
         executeElseLabels++;
-        //_vmOutput << "    <ifStatement> " << endl;
-        
+
         //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
         myTokenizer.advance();
 
@@ -464,7 +482,7 @@ using namespace std;
         compileExpression();
         myTokenizer.advance();
         myVMWriter.writeArithmetic("not");
-        myVMWriter.writeIf(executeElse);
+        myVMWriter.writeIf(IF_FALSE);
 
         //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ')'
         myTokenizer.advance();
@@ -473,14 +491,15 @@ using namespace std;
         myTokenizer.advance();
 
         compileStatements();
-        myVMWriter.writeGoto(executeIf);
+        myVMWriter.writeGoto(IF_TRUE);
 
         //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '}'
         myTokenizer.advance();
 
+        myVMWriter.writeLabel(IF_FALSE);
+        
         if (myTokenizer.keyWord() == "else")
         {
-            myVMWriter.writeLabel(executeElse);
             //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
             myTokenizer.advance();
             
@@ -492,8 +511,7 @@ using namespace std;
             //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '}'
             myTokenizer.advance();
         }
-        myVMWriter.writeLabel(executeIf);
-        //_vmOutput << "    </ifStatement> " << endl;
+        myVMWriter.writeLabel(IF_TRUE);
         return;
     }
     void CompilationEngine::compileExpression()
@@ -629,7 +647,14 @@ using namespace std;
             }
             else
             {
-                myVMWriter.writePush(mySymbolTable.KindOf(termIdentifier), mySymbolTable.IndexOf(termIdentifier));
+                if (mySymbolTable.KindOf(termIdentifier) == "field")
+                {
+                    myVMWriter.writePush("THIS", mySymbolTable.IndexOf(termIdentifier));
+                }
+                else
+                {
+                    myVMWriter.writePush(mySymbolTable.KindOf(termIdentifier), mySymbolTable.IndexOf(termIdentifier));
+                }
             }
         }
         else if (myTokenizer.symbol() == '-' || myTokenizer.symbol() == '~') //unaryop term
