@@ -333,17 +333,17 @@ using namespace std;
             }
                 
             myTokenizer.advance(); // '('
-            
-            compileExpressionList();
-
-            myTokenizer.advance(); // ')'
+                        
             if (subroutine != "")
-            {
+            {   compileExpressionList();
+                myTokenizer.advance(); // ')'
                 myVMWriter.writeCall(subroutineCallerType + "." + subroutine, numArgs);
             }
             else
             {
                 myVMWriter.writePush("POINTER", 0);
+                compileExpressionList();
+                myTokenizer.advance(); // ')'
                 numArgs++;
                 myVMWriter.writeCall(thisClass + "." + subroutineCallerType, numArgs);
             }
