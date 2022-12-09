@@ -38,15 +38,14 @@ class CompilationEngine{
     VMWriter myVMWriter;
     string thisClass;
     string currentFunction;
-    string subroutineType;
+    //string subroutineType;
     string currentIdentifier;
     string currentSymbol;
     vector<string> currentSymbols;
     string currentSubroutineReturnType;
     int numArgs;
     int whileLabels;
-    int executeIfLabels;
-    int executeElseLabels;
+    int ifLabels;
 };
 
 

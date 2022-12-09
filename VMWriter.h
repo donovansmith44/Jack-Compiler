@@ -9,16 +9,16 @@
 #include <vector>
 #include "JackTokenizer.h"
 #include "CompilationEngine.h"
-
+#include "SymbolTable.h"
 using namespace std;
 
 class VMWriter
 {
     public:
     VMWriter();
-    VMWriter(ofstream);
-    void writePush(string);
-    void writePop(string);
+    VMWriter(string);
+    void writePush(string, int);
+    void writePop(string, int);
     void writeArithmetic(string);
     void writeLabel(string);
     void writeGoto(string);
@@ -27,5 +27,9 @@ class VMWriter
     void writeFunction(string, int);
     void writeReturn();
     void close();
+
+    private:
+    string tolower(string);
+    ofstream vmFile;
 };
 #endif

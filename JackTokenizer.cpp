@@ -266,7 +266,7 @@ vector<string> JackTokenizer::Tokenize(string line)
             if (!isspace(line[i])) //iteratively add all non space characters into a temporary string variable, and check if it becomes a unique token
             {
                 tempString += line[i];
-                if (isKeyword(tempString))
+                if (isKeyword(tempString) && isspace(line[i+1]))
                 {
                     tokens.push_back(tempString);
                     tempString = "";

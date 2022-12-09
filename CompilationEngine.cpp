@@ -15,7 +15,6 @@ using namespace std;
         myTokenizer = JackTokenizer(jackInput);
         myVMWriter = VMWriter(vmFileName);
         mySymbolTable = SymbolTable();
-        _vmOutput.open(vmFileName);
         thisClass = "";
         currentFunction = "";
         currentIdentifier = "";
@@ -34,7 +33,7 @@ using namespace std;
 
         myTokenizer.advance(); //{
 
-        while (myTokenizer.hasMoreTokens())//compile classVarDec and subroutineDec
+        while (myTokenizer.hasMoreTokens())
         {
             myTokenizer.advance();
             if (myTokenizer.tokenType() == "KEYWORD")
@@ -115,6 +114,7 @@ using namespace std;
         mySymbolTable.startSubroutine(thisClass);
         string subroutineType = "";
         subroutineType = myTokenizer.keyWord(); //subroutineType is constructor, function, or method
+
         if (subroutineType == "method")
         {
             mySymbolTable.Define("this", thisClass, "ARG");
@@ -143,6 +143,7 @@ using namespace std;
         
         /* 'functionName' '(' 'parameterList' ')' */
         currentFunction = myTokenizer.identifier(); //name of the function
+        // cout << "CurrentFunction: " << currentFunction << endl;
 
         myTokenizer.advance(); // '('
 
@@ -191,7 +192,7 @@ using namespace std;
     void CompilationEngine::compileParameterList()
     {
         string parameterType = "";
-        string paramID = "";
+        string parameterID = "";
 
         while (myTokenizer.symbol() != ')')
         {
@@ -201,13 +202,30 @@ using namespace std;
             }
             else if(myTokenizer.tokenType() == "IDENTIFIER")
             {
-                mySymbolTable.Define(myTokenizer.identifier(), parameterType, "ARG");
+                parameterType = myTokenizer.identifier();
             }
-            else if(myTokenizer.symbol() == ',')
+            else
             {
-                /*This means that we have another argument in the parameter list*/
+                /*This should not be possible. If this loop is entered, there must be 
+                parameters present which will have a type of "KEYWORD" or "IDENTIFIER"*/
             }
+
             myTokenizer.advance();
+
+            parameterID = myTokenizer.identifier();
+
+            mySymbolTable.Define(parameterID, parameterType, "ARG");
+            
+            myTokenizer.advance();
+
+            if(myTokenizer.symbol() == ',')
+            { 
+                myTokenizer.advance();
+            }
+            else
+            {
+                /*We have reached the end of the parameter list.*/
+            }
         }
         return;
     }
