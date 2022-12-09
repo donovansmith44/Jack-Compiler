@@ -23,8 +23,7 @@ using namespace std;
         currentSymbol = "";
         numArgs = 0;
         currentSymbols.clear();
-        executeIfLabels = 0;
-        executeElseLabels = 0;
+        ifLabels = 0;
         whileLabels = 0;
     }
     void CompilationEngine::compileClass()
@@ -241,22 +240,18 @@ using namespace std;
         {
             if (myTokenizer.tokenType() == "SYMBOL")
             {
-                //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>" << endl; ','
+                // ','
             }
             else if (myTokenizer.tokenType() == "IDENTIFIER")
             {
-                //_vmOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>" << endl; var name
                 mySymbolTable.Define(myTokenizer.identifier(), currentVarType, "VAR");
             }
             myTokenizer.advance();
         }
-        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>" << endl;
-        //_vmOutput << "    </varDec> " << endl;
         return;
     }
     void CompilationEngine::compileStatements()
     {
-        //_vmOutput << "   <statements> " << endl;
         while (myTokenizer.symbol() != '}')
         {
             if (myTokenizer.keyWord() == "let") //the currentToken should be ';' after the let statement compiles
@@ -294,7 +289,6 @@ using namespace std;
                 myTokenizer.advance();
             }
         }
-      //  _vmOutput << "   </statements> " << endl;
         return;
     }
     void CompilationEngine::compileDo() 
@@ -371,38 +365,47 @@ using namespace std;
     }
     void CompilationEngine::compileLet()
     {
+        bool accessingArray = false;
         string varToSet = "";
 
-        //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
-        //cout << myTokenizer.keyWord() << endl;
         myTokenizer.advance();
 
-        //cout << myTokenizer.identifier() << endl;
-        //_vmOutput << "     <identifier> " << myTokenizer.identifier() << " </identifier>"  << endl; //subroutineName
         varToSet = myTokenizer.identifier();
 
         myTokenizer.advance();
 
         if (myTokenizer.symbol() == '[')
         {
-        //    _vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '['
+            accessingArray = true;
+            myVMWriter.writePush(mySymbolTable.KindOf(varToSet), mySymbolTable.IndexOf(varToSet));
+             cout << mySymbolTable.KindOf(varToSet) << endl;
+             cout << mySymbolTable.IndexOf(varToSet) << endl;
             myTokenizer.advance();
 
             compileExpression();
+
             myTokenizer.advance();
             
-        //    _vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ']'
-            myTokenizer.advance();
+            myTokenizer.advance(); // ']'
+            myVMWriter.writeArithmetic("ADD");
         }
-        
-        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '='
-        myTokenizer.advance();
+                
+        myTokenizer.advance(); // '='
 
         compileExpression();
+
         myTokenizer.advance();
+
         if (mySymbolTable.KindOf(varToSet) == "field")
         {
             myVMWriter.writePop("THIS", mySymbolTable.IndexOf(varToSet));
+        }
+        else if(accessingArray)
+        {
+            myVMWriter.writePop("TEMP", 0);
+            myVMWriter.writePop("POINTER", 1);
+            myVMWriter.writePush("TEMP", 0);
+            myVMWriter.writePop("THAT", 0);
         }
         else
         {
@@ -413,45 +416,35 @@ using namespace std;
     }
     void CompilationEngine::compileWhile()
     {
-        //_vmOutput << "    <whileStatement> " << endl;
-        string currentContinueWhileLabel = "L" + to_string(whileLabels);
+        string WHILE_EXP = "WHILE_EXP" + to_string(whileLabels);
+        string WHILE_END = "WHILE_END" + to_string(whileLabels);
         whileLabels++;
 
-        string currentExitWhileLabel = "L" + to_string(whileLabels);
-        whileLabels++;
+        myVMWriter.writeLabel(WHILE_EXP);
 
-        myVMWriter.writeLabel(currentContinueWhileLabel);
-        //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
         myTokenizer.advance();
 
-        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '('
-        myTokenizer.advance();
+        myTokenizer.advance(); // '('
 
         compileExpression();
         myVMWriter.writeArithmetic("not");
-        myVMWriter.writeIf(currentExitWhileLabel);
+        myVMWriter.writeIf(WHILE_END);
 
-        myTokenizer.advance();
-        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ')'
+        myTokenizer.advance(); // ')'
 
-        myTokenizer.advance();
-
-        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '{'
+        myTokenizer.advance(); // '{'
 
         compileStatements();
 
-        myVMWriter.writeGoto(currentContinueWhileLabel);
+        myVMWriter.writeGoto(WHILE_EXP);
 
-        myVMWriter.writeLabel(currentExitWhileLabel);
+        myVMWriter.writeLabel(WHILE_END);
 
-        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '}'
-        
-        //_vmOutput << "    </whileStatement> " << endl;
+        // '}'
         return;
     }
     void CompilationEngine::compileReturn()
     {
-        //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
         myTokenizer.advance();
         if (myTokenizer.symbol() != ';')
         {
@@ -463,53 +456,43 @@ using namespace std;
             myVMWriter.writePush("CONST", 0);
         }
         myVMWriter.writeReturn();
-        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ';'
         return;
     }
     void CompilationEngine::compileIf()
     {
-        string IF_TRUE = "IF_TRUE" + to_string(executeIfLabels);
-        executeIfLabels++;
-        string IF_FALSE = "IF_FALSE" + to_string(executeElseLabels);
-        executeElseLabels++;
+        string IF_TRUE = "IF_TRUE" + to_string(ifLabels);
+        string IF_FALSE = "IF_FALSE" + to_string(ifLabels);
+        ifLabels++;
 
-        //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
         myTokenizer.advance();
 
-        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '('
-        myTokenizer.advance();
+        myTokenizer.advance(); // '('
 
         compileExpression();
         myTokenizer.advance();
         myVMWriter.writeArithmetic("not");
         myVMWriter.writeIf(IF_FALSE);
 
-        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // ')'
-        myTokenizer.advance();
-
-        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '{'
-        myTokenizer.advance();
+        myTokenizer.advance(); // ')'
+        
+        myTokenizer.advance(); // '{'
 
         compileStatements();
         myVMWriter.writeGoto(IF_TRUE);
 
-        //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '}'
-        myTokenizer.advance();
+        myTokenizer.advance();  // '}'
 
         myVMWriter.writeLabel(IF_FALSE);
         
         if (myTokenizer.keyWord() == "else")
         {
-            //_vmOutput << "     <keyword> " << myTokenizer.keyWord() << " </keyword>"  << endl;
             myTokenizer.advance();
             
-            //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '{'
-            myTokenizer.advance();
+            myTokenizer.advance(); // '{'
 
             compileStatements();
 
-            //_vmOutput << "     <symbol> " << myTokenizer.symbol() << " </symbol>"  << endl; // '}'
-            myTokenizer.advance();
+            myTokenizer.advance(); // '}'
         }
         myVMWriter.writeLabel(IF_TRUE);
         return;
@@ -595,6 +578,13 @@ using namespace std;
             {
 
             }
+            myVMWriter.writePush("CONST", stringConstant.length());
+            myVMWriter.writeCall("String.new", 1);
+            for (int i = 0; i < stringConstant.length(); i++)
+            {
+                myVMWriter.writePush("CONST", int(stringConstant[i]));
+                myVMWriter.writeCall("String.appendChar", 2);
+            }
         }
         else if (myTokenizer.keyWord() == "false" | myTokenizer.keyWord() == "null")
         {
@@ -607,24 +597,37 @@ using namespace std;
         }
         else if (myTokenizer.keyWord() == "this" )
         {
-            //_vmOutput << "      <keyword> " << myTokenizer.keyWord() << " </keyword> " << endl;
-            //do we assume that pointer is already set?
-            //YES, because when we declare a method, this is defined as argument 0 in our symbol table, and 
             myVMWriter.writePush("POINTER", 0);
         }
         else if (myTokenizer.tokenType() == "IDENTIFIER")
         {
             termIdentifier = myTokenizer.identifier();
 
-            if (myTokenizer.getNextToken() == "[" | myTokenizer.getNextToken() == "(") //array or variable
+            if (myTokenizer.getNextToken() == "[") //array
             {
                 myTokenizer.advance();
                 
-                myTokenizer.advance(); // '(' or '['
+                myTokenizer.advance(); // '['
+
+                myVMWriter.writePush(mySymbolTable.KindOf(termIdentifier), mySymbolTable.IndexOf(termIdentifier));
+                //cout << mySymbolTable.KindOf(termIdentifier) << " " << mySymbolTable.IndexOf(termIdentifier)  << endl;
+                compileExpression();
+
+                myVMWriter.writeArithmetic("ADD");
+                myVMWriter.writePop("POINTER", 1);
+                myVMWriter.writePush("THAT", 0);
+
+                myTokenizer.advance(); // ']'
+            }
+            else if (myTokenizer.getNextToken() == "(") //variable
+            {
+                myTokenizer.advance();
+                
+                myTokenizer.advance(); // '('
 
                 compileExpression();
 
-                myTokenizer.advance(); // ')' or ']'
+                myTokenizer.advance(); // ')'
             }
             else if(myTokenizer.getNextToken() == ".") //subroutineCall
             {
@@ -640,7 +643,6 @@ using namespace std;
                 myTokenizer.advance(); // '('
                 
                 compileExpressionList();
-                                       // ')'
 
                 myVMWriter.writeCall(termIdentifier + "." + subroutine, numArgs);
                 numArgs = 0;
