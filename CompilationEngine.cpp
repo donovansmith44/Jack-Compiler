@@ -310,15 +310,16 @@ using namespace std;
         string subroutineCallerType = "";
         string subroutine = "";
 
-        myTokenizer.advance();
+        myTokenizer.advance(); // 'do'
 
         if (myTokenizer.tokenType() == "IDENTIFIER")
         {
             subroutineCaller = myTokenizer.identifier();
 
-            if (mySymbolTable.TypeOf(subroutineCaller) != "NONE") //if the type of the subroutineCaller is not "NONE", then that means that the subroutineCaller is an object, with a type corresponding to its respective class.
+            if (mySymbolTable.TypeOf(subroutineCaller) != "NONE") //if the type of the subroutineCaller is not "NONE", then that means that the subroutineCaller is a programmer-defined object, with a type corresponding to its respective class.
             {
                 subroutineCallerType = mySymbolTable.TypeOf(subroutineCaller);
+
                 if (mySymbolTable.KindOf(subroutineCaller) == "field")
                 {
                     myVMWriter.writePush("THIS", mySymbolTable.IndexOf(subroutineCaller)); //the object being operated on is a caller argument, and must be pushed onto the stack
@@ -330,7 +331,7 @@ using namespace std;
                     numArgs++;
                 }
             }
-            else //this condition will handle the types of subroutineCallers that are predefined by the OS
+            else //if the type of the subroutineCaller is "NONE", then the subroutineCallerType is predefined by the OS.
             {
                 subroutineCallerType = myTokenizer.identifier();
             }
@@ -347,7 +348,7 @@ using namespace std;
             }
             else
             {
-                /*This should not be possible. do statements always have a caller.*/
+                /*This should not be possible. do statements always have a caller which is followed by '.'*/
             }
                 
             myTokenizer.advance(); // '('
