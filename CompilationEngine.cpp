@@ -15,14 +15,16 @@ using namespace std;
         myTokenizer = JackTokenizer(jackInput);
         myVMWriter = VMWriter(vmFileName);
         mySymbolTable = SymbolTable();
+
+        numArgs = 0;
+        ifLabels = 0;
+        whileLabels = 0;
         thisClass = "";
         currentFunction = "";
         currentIdentifier = "";
         currentSymbol = "";
-        numArgs = 0;
+
         currentSymbols.clear();
-        ifLabels = 0;
-        whileLabels = 0;
     }
     void CompilationEngine::compileClass()
     {
@@ -52,7 +54,6 @@ using namespace std;
                 }
             }            
         }
-        _vmOutput.close();
         return;
     }
     void CompilationEngine::compileClassVarDec()
@@ -143,7 +144,7 @@ using namespace std;
         
         /* 'functionName' '(' 'parameterList' ')' */
         currentFunction = myTokenizer.identifier(); //name of the function
-        
+
         myTokenizer.advance(); // '('
 
         myTokenizer.advance(); // ')' or some parameter is the current token here. if it's a ')', compileParameterList does not advance the tokenizer past that token.

@@ -20,8 +20,6 @@ using namespace std;
         numArgs = 0;
         numVars = 0;
         subroutineScopeVariables.clear();
-        //subroutineScopeVariables["this"] = make_tuple(currentClassName, "argument", 0);
-        //numArgs++;
         return;
     }
     void SymbolTable::Define(string name, string type, string kind)

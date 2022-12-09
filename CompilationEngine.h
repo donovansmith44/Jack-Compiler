@@ -32,13 +32,11 @@ class CompilationEngine{
     void compileExpressionList();
     private:
     ifstream _jackInput;
-    ofstream _vmOutput;
     JackTokenizer myTokenizer;
     SymbolTable mySymbolTable;
     VMWriter myVMWriter;
     string thisClass;
     string currentFunction;
-    //string subroutineType;
     string currentIdentifier;
     string currentSymbol;
     vector<string> currentSymbols;
