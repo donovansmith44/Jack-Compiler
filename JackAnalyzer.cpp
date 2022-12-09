@@ -44,11 +44,11 @@ int main(int argc, char* argv[]){
     vector<string> jackFiles = getJackFiles(argv[1]);
     ofstream vmFile;
     ifstream jackFile;
+    
     for (int i = 0; i < jackFiles.size(); i++)
     {
         jackFile.open(jackFiles[i]);
         CompilationEngine parser(jackFile, getJackFileName(jackFiles[i]) + ".vm");
-        //VMWriter myVMWriter(getJackFileName(jackFiles[i]) + ".vm");
         parser.compileClass();
         jackFile.close();
     }

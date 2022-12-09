@@ -143,8 +143,7 @@ using namespace std;
         
         /* 'functionName' '(' 'parameterList' ')' */
         currentFunction = myTokenizer.identifier(); //name of the function
-        // cout << "CurrentFunction: " << currentFunction << endl;
-
+        
         myTokenizer.advance(); // '('
 
         myTokenizer.advance(); // ')' or some parameter is the current token here. if it's a ')', compileParameterList does not advance the tokenizer past that token.
