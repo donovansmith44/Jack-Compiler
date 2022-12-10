@@ -259,6 +259,10 @@ using namespace std;
             {
                 mySymbolTable.Define(myTokenizer.identifier(), currentVarType, "VAR");
             }
+            else
+            {
+                
+            }
             myTokenizer.advance();
         }
         return;

@@ -41,17 +41,23 @@ string getJackFileName(string jackFile)
 }
 
 int main(int argc, char* argv[]){
-    vector<string> jackFiles = getJackFiles(argv[1]);
     ofstream vmFile;
     ifstream jackFile;
-    
-    for (int i = 0; i < jackFiles.size(); i++)
+    try
     {
-        jackFile.open(jackFiles[i]);
-        CompilationEngine parser(jackFile, getJackFileName(jackFiles[i]) + ".vm");
-        parser.compileClass();
-        jackFile.close();
-    }
+        vector<string> jackFiles = getJackFiles(argv[1]);
 
+        for (int i = 0; i < jackFiles.size(); i++)
+        {
+            jackFile.open(jackFiles[i]);
+            CompilationEngine parser(jackFile, getJackFileName(jackFiles[i]) + ".vm");
+            parser.compileClass();
+            jackFile.close();
+        }
+    }
+    catch(const std::exception& e)
+    {
+        cout << "There was an error openinng your text files. Does the directory exist and contain .jack files? Run the program again." << endl;
+    }
     return 0;
 }
