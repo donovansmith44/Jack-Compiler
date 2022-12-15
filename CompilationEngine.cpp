@@ -480,7 +480,7 @@ using namespace std;
         compileStatements();
         myVMWriter.writeGoto(IF_TRUE);
 
-        myTokenizer.advance();  // '}'
+        myTokenizer.advance();  // '}' or 'else's
 
         myVMWriter.writeLabel(IF_FALSE);
         
@@ -561,25 +561,9 @@ using namespace std;
         {
             string stringConstant = myTokenizer.stringVal();
 
-            if(stringConstant.find('"') != string::npos) //string constants are identified with opening and closing '"' during tokenization. Remove them for compilation.
-            {
-                stringConstant.erase(stringConstant.find('"'));
-            }
-            else
-            {
-
-            }
-
-            if(stringConstant.find('"') != string::npos)
-            {
-                stringConstant.erase(stringConstant.find('"'));
-            }
-            else
-            {
-
-            }
             myVMWriter.writePush("CONST", stringConstant.length());
             myVMWriter.writeCall("String.new", 1);
+
             for (int i = 0; i < stringConstant.length(); i++)
             {
                 myVMWriter.writePush("CONST", int(stringConstant[i]));
