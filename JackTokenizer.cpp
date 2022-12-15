@@ -41,6 +41,7 @@ void JackTokenizer::advance()
 {
     currentToken = jackTokens[commandNum];
     commandNum++;
+
     if (hasMoreTokens()) //it's useful to have a string that holds the token after the current one when compiling particular syntactic elements
     {
         nextToken = jackTokens[commandNum];
@@ -114,6 +115,7 @@ vector<string> JackTokenizer::removeLineComments(vector<string> tokens)
 vector<string> JackTokenizer::removeAPIComments(vector<string> tokens)
 {
     vector<string> newTokens;
+
     for (int i = 0; i < tokens.size(); i++)
     {
         if (tokens[i].find("/**") != string::npos)
@@ -167,6 +169,15 @@ vector<string> JackTokenizer::removeBlockComments(vector<string> tokens)
     }
     
     return newTokens;
+}
+vector<string> JackTokenizer::removeComments(vector<string> tokens)
+{
+    /*There are three different types of comments to remove from the input stream*/
+    tokens = removeLineComments(tokens);
+    tokens = removeAPIComments(tokens);
+    tokens = removeBlockComments(tokens);
+    
+    return tokens;
 }
 vector<string> JackTokenizer::appendStringLiterals(vector<string> tokens)
 {
@@ -239,9 +250,8 @@ bool JackTokenizer::isIntConstant(string line)
 void JackTokenizer::clean() //remove comments and unnecessary whitespace lines
 {
     string allLines = "";
-    jackLines = removeLineComments(jackLines);
-    jackLines = removeAPIComments(jackLines);
-    jackLines = removeBlockComments(jackLines);
+
+    jackLines = removeComments(jackLines);
     
     for (int i = 0; i < jackLines.size(); i++) //concatenate all of the cleaned lines into a single string to be split into unique tokens
     {
@@ -266,6 +276,7 @@ vector<string> JackTokenizer::Tokenize(string line)
             if (!isspace(line[i])) //iteratively add all non space characters into a temporary string variable, and check if it becomes a unique token
             {
                 tempString += line[i];
+
                 if (isKeyword(tempString) && isspace(line[i+1]))
                 {
                     tokens.push_back(tempString);
@@ -276,6 +287,7 @@ vector<string> JackTokenizer::Tokenize(string line)
                     tokens.push_back(tempString);
                     tempString = "";
                 }
+
             }
         }
         else //if the i+1th character is a symbol or space, then save all of the non-space characters up to that symbol as a new token.
@@ -291,8 +303,11 @@ vector<string> JackTokenizer::Tokenize(string line)
         }
         
     }
-
-    tokens = appendStringLiterals(tokens); //string constants must be treated differently because they include double quotes, and may span multiple tokens (in the way I've chosen to parse them here)
+    
+    /*each space following an opening double quote will mark 
+    the beginning of a new word, which will be tokenized with 
+    all following words until the end of the double quote*/
+    tokens = appendStringLiterals(tokens); 
 
     for (int i = 0; i < tokens.size(); i++) //remove the blank elements from the vector
     {

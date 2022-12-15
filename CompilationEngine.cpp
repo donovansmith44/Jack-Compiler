@@ -38,6 +38,7 @@ using namespace std;
         while (myTokenizer.hasMoreTokens())
         {
             myTokenizer.advance();
+
             if (myTokenizer.tokenType() == "KEYWORD")
             {
                 if (myTokenizer.keyWord() == "static" | myTokenizer.keyWord() == "field")
@@ -53,6 +54,10 @@ using namespace std;
                     /*We have reached the end of the jack file.*/
                 }
             }            
+            else
+            {
+                /*expected a keyword*/
+            }
         }
         return;
     }
@@ -70,7 +75,7 @@ using namespace std;
             classVarType = myTokenizer.keyWord();
             myTokenizer.advance();
         }
-        else if(myTokenizer.tokenType() == "IDENTIFIER") //if the tokenType is an identifier, then the type of the static or field variable will be a class type.
+        else if(myTokenizer.tokenType() == "IDENTIFIER") //if the tokenType is an identifier, then the type of the static or field variable will be a class type (an object)
         {
             classVarType = myTokenizer.identifier();
             myTokenizer.advance();
@@ -102,27 +107,21 @@ using namespace std;
             {
                 break;
             }
-            else
-            {
-
-            }
         }
 
         return;
     }
     void CompilationEngine::compileSubroutine()
     {
-        mySymbolTable.startSubroutine(thisClass);
         string subroutineType = "";
+
+        mySymbolTable.startSubroutine();
+
         subroutineType = myTokenizer.keyWord(); //subroutineType is constructor, function, or method
 
         if (subroutineType == "method")
         {
-            mySymbolTable.Define("this", thisClass, "ARG");
-        }
-        else
-        {
-
+            mySymbolTable.Define("this", thisClass, "ARG"); //methods require an argument called "this" to be stored in their symbol table, to point to the current object
         }
 
         myTokenizer.advance();
@@ -130,18 +129,14 @@ using namespace std;
         if(myTokenizer.tokenType() == "IDENTIFIER") //the function/constructor will have a return type of 'identifier' 
         {
             currentSubroutineReturnType = myTokenizer.identifier();
-            myTokenizer.advance();
         }
         else if (myTokenizer.tokenType() == "KEYWORD") //the function/constructor will have a predefined return type (int, void, char...)
         {
             currentSubroutineReturnType = myTokenizer.keyWord();
-            myTokenizer.advance();
-        }
-        else
-        {
-            /*this shouldn't be possible*/
         }
         
+        myTokenizer.advance();
+
         /* 'functionName' '(' 'parameterList' ')' */
         currentFunction = myTokenizer.identifier(); //name of the function
 
@@ -162,27 +157,19 @@ using namespace std;
             compileVarDec();
             myTokenizer.advance();
         }
+        
+        myVMWriter.writeFunction(thisClass + "." + currentFunction, mySymbolTable.VarCount("local"));
 
         if (subroutineType == "method")
-        {
-            myVMWriter.writeFunction(thisClass + "." + currentFunction, mySymbolTable.VarCount("local"));
+        {    
             myVMWriter.writePush("argument", 0);
             myVMWriter.writePop("POINTER", 0);
         }
-        else if(subroutineType == "function")
-        {
-            myVMWriter.writeFunction(thisClass + "." + currentFunction, mySymbolTable.VarCount("local"));
-        }
         else if(subroutineType == "constructor")
         {
-            myVMWriter.writeFunction(thisClass + "." + currentFunction, mySymbolTable.VarCount("local"));
             myVMWriter.writePush("CONST", mySymbolTable.VarCount("field"));
             myVMWriter.writeCall("Memory.alloc", 1);
             myVMWriter.writePop("POINTER", 0);
-        }
-        else
-        {
-            /*this should not be possible.*/            
         }
 
         compileStatements();
@@ -246,22 +233,15 @@ using namespace std;
 
         myTokenizer.advance();
 
-        mySymbolTable.Define(myTokenizer.identifier(), currentVarType, "VAR");
-        myTokenizer.advance();
-
         while (myTokenizer.symbol() != ';')
         {
-            if (myTokenizer.tokenType() == "SYMBOL")
-            {
-                // ','
-            }
-            else if (myTokenizer.tokenType() == "IDENTIFIER")
+           if (myTokenizer.tokenType() == "IDENTIFIER")
             {
                 mySymbolTable.Define(myTokenizer.identifier(), currentVarType, "VAR");
             }
             else
             {
-                
+                /*There will be commas in the case that there are multiple variables declared at once*/
             }
             myTokenizer.advance();
         }
@@ -327,13 +307,12 @@ using namespace std;
                 if (mySymbolTable.KindOf(subroutineCaller) == "field")
                 {
                     myVMWriter.writePush("THIS", mySymbolTable.IndexOf(subroutineCaller)); //the object being operated on is a caller argument, and must be pushed onto the stack
-                    numArgs++;
                 }
                 else
                 {
                     myVMWriter.writePush(mySymbolTable.KindOf(subroutineCaller), mySymbolTable.VarCount(subroutineCaller)); //the object being operated on is a caller argument, and must be pushed onto the stack
-                    numArgs++;
                 }
+                numArgs++;
             }
             else //if the type of the subroutineCaller is "NONE", then the subroutineCallerType is predefined by the OS.
             {
@@ -444,7 +423,9 @@ using namespace std;
         myTokenizer.advance(); // '('
 
         compileExpression();
+
         myVMWriter.writeArithmetic("not");
+        
         myVMWriter.writeIf(WHILE_END);
 
         myTokenizer.advance(); // ')'
@@ -463,15 +444,17 @@ using namespace std;
     void CompilationEngine::compileReturn()
     {
         myTokenizer.advance();
-        if (myTokenizer.symbol() != ';')
-        {
-            compileExpression();
-            myTokenizer.advance();    
-        }
-        else
+
+        if (myTokenizer.symbol() == ';')
         {
             myVMWriter.writePush("CONST", 0);
+            myVMWriter.writeReturn();
+            return;
         }
+
+        compileExpression();
+        myTokenizer.advance();    
+
         myVMWriter.writeReturn();
         return;
     }

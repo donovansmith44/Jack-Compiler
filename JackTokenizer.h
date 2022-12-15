@@ -25,6 +25,7 @@ class JackTokenizer{
     vector<string> removeLineComments(vector<string>);
     vector<string> removeAPIComments(vector<string>);
     vector<string> removeBlockComments(vector<string>);
+    vector<string> removeComments(vector<string>);
     vector<string> appendStringLiterals(vector<string>);
     bool isKeyword(string);
     bool isSymbol(string);

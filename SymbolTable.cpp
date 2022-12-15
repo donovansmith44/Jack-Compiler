@@ -15,7 +15,7 @@ using namespace std;
         numStatics = 0;
         numVars = 0;
     }
-    void SymbolTable::startSubroutine(string currentClassName)
+    void SymbolTable::startSubroutine()
     {
         numArgs = 0;
         numVars = 0;

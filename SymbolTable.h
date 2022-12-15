@@ -18,7 +18,7 @@ class SymbolTable
 {
     public:
     SymbolTable();
-    void startSubroutine(string);
+    void startSubroutine();
     void Define(string, string, string);
     int VarCount(string);
     string KindOf(string);
