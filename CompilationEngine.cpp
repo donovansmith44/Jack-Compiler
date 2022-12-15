@@ -723,26 +723,24 @@ using namespace std;
     }
     void CompilationEngine::compileExpressionList()
     {
-        if (myTokenizer.symbol() != ')')
+        if (myTokenizer.symbol() == ')')
         {
-            numArgs++;
-            compileExpression();
-            myTokenizer.advance();
-           
-           while (myTokenizer.symbol() != ')')
-            {
-                if (myTokenizer.symbol() == ',')
-                {
-                    myTokenizer.advance();
-                    compileExpression();
-                    myTokenizer.advance();
-                    numArgs++;
-                }   
-                else
-                {
+            return;
+        }
 
-                }
-            }
+        numArgs++;
+        compileExpression();
+        myTokenizer.advance();
+        
+        while (myTokenizer.symbol() != ')')
+        {
+            if (myTokenizer.symbol() == ',')
+            {
+                myTokenizer.advance();
+                compileExpression();
+                myTokenizer.advance();
+                numArgs++;
+            }   
         }
         return;
     }
