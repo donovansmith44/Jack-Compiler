@@ -4,7 +4,6 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <iomanip>
 #include <vector>
 #include "JackTokenizer.h"
 #include "SymbolTable.h"
@@ -37,8 +36,6 @@ class CompilationEngine{
     VMWriter myVMWriter;
     string thisClass;
     string currentFunction;
-    string currentIdentifier;
-    string currentSymbol;
     vector<string> currentSymbols;
     string currentSubroutineReturnType;
     int numArgs;

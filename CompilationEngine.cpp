@@ -21,9 +21,6 @@ using namespace std;
         whileLabels = 0;
         thisClass = "";
         currentFunction = "";
-        currentIdentifier = "";
-        currentSymbol = "";
-
         currentSymbols.clear();
     }
     void CompilationEngine::compileClass()

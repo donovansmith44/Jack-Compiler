@@ -42,58 +42,100 @@ void JackTokenizer::advance()
     currentToken = jackTokens[commandNum];
     commandNum++;
 
-    if (hasMoreTokens()) //it's useful to have a string that holds the token after the current one when compiling particular syntactic elements
+    /*it's sometimes useful for the compiler to be able
+     to reference the next token in the input stream*/
+    if (hasMoreTokens())
     {
-        nextToken = jackTokens[commandNum];
+        nextToken = jackTokens[commandNum]; 
     }
+
     return;
 }
 string JackTokenizer::getNextToken()
 {
     return nextToken;
 }
-string JackTokenizer::tokenType()
+void JackTokenizer::clean() //remove comments and unnecessary whitespace lines
 {
-    if (isKeyword(currentToken))
+    string allLines = "";
+
+    jackLines = removeComments(jackLines);
+    
+    for (int i = 0; i < jackLines.size(); i++) //concatenate all of the cleaned lines into a single string to be split into unique tokens
     {
-        return "KEYWORD";
+        allLines += jackLines[i];
     }
-    else if (isSymbol(currentToken))
-    {
-        return "SYMBOL";
-    }
-    else if (currentToken.find('"') != string::npos)
-    {
-        return "STRING_CONST";
-    }
-    else if(isIntConstant(currentToken))
-    {
-        return "INT_CONST";
-    }
-    else
-    {
-        return "IDENTIFIER";
-    }
+    
+    jackTokens = Tokenize(allLines);
+
+    return;
 }
-string JackTokenizer::keyWord()
+vector<string> JackTokenizer::removeComments(vector<string> tokens)
 {
-    return currentToken;
+    /*There are three different types of comments to remove from the input stream*/
+    tokens = removeLineComments(tokens);
+    tokens = removeAPIComments(tokens);
+    tokens = removeBlockComments(tokens);
+    
+    return tokens;
 }
-char JackTokenizer::symbol()
+vector<string> JackTokenizer::Tokenize(string line)
 {
-    return currentToken[0];
-}
-string JackTokenizer::identifier()
-{  
-    return currentToken;
-}
-int JackTokenizer::intVal()
-{
-    return stoi(currentToken);
-}
-string JackTokenizer::stringVal()
-{
-    return currentToken.substr(1, currentToken.length()-2); //ignore double quotes
+    int i = 0;
+    string tempString = "";
+    vector<string> tokens;
+
+    for (int i = 0; i < line.length(); i++)
+    {
+        if (!isSymbol(line.substr(i+1, 1)) && line.substr(i+1, 1) != " ") //if the i+1th character is not a symbol or space
+        {
+            if (!isspace(line[i])) //iteratively add all non space characters into a temporary string variable, and check if it becomes a unique token
+            {
+                tempString += line[i];
+
+                if (isKeyword(tempString) && isspace(line[i+1]))
+                {
+                    tokens.push_back(tempString);
+                    tempString = "";
+                }
+                else if(isSymbol(tempString))
+                {
+                    tokens.push_back(tempString);
+                    tempString = "";
+                }
+
+            }
+        }
+        else //if the i+1th character is a symbol or space, then save all of the non-space characters up to that symbol as a new token.
+        {
+            tempString += line[i];
+
+                if (tempString != " " && !tempString.empty())
+                {
+                    tokens.push_back(tempString);
+                }
+
+            tempString = "";
+        }
+        
+    }
+    
+    /*each space following an opening double quote will mark 
+    the beginning of a new word, which will be tokenized with 
+    all following words until the end of the double quote*/
+    tokens = appendStringLiterals(tokens); 
+
+    for (int i = 0; i < tokens.size(); i++) //remove the blank elements from the vector
+    {
+        string temp = tokens[i];
+        if (isspace(temp[0]) | temp == " ")
+        {
+            tokens.erase(tokens.begin() + i);
+            i--;
+        }    
+    }
+    
+    return tokens;
 }
 vector<string> JackTokenizer::removeLineComments(vector<string> tokens)
 {
@@ -170,14 +212,21 @@ vector<string> JackTokenizer::removeBlockComments(vector<string> tokens)
     
     return newTokens;
 }
-vector<string> JackTokenizer::removeComments(vector<string> tokens)
+bool JackTokenizer::isSymbol(string line)
 {
-    /*There are three different types of comments to remove from the input stream*/
-    tokens = removeLineComments(tokens);
-    tokens = removeAPIComments(tokens);
-    tokens = removeBlockComments(tokens);
-    
-    return tokens;
+    if(line == "{" || line == "}" || line == "(" || line == ")" || line == "[" || line == "]" || line == "." || line == "," || line == ";" || line == "+" || line == "-" || line == "*" || line == "/" || line == "&" || line == "|" || line == "<" || line == ">" || line == "=" || line == "~")
+    {
+        return true;
+    }
+    return false;
+}
+bool JackTokenizer::isKeyword(string line)
+{
+    if (line == "class" || line == "constructor" || line == "function" || line == "method" || line == "field" || line == "static" || line == "var" || line == "int" || line == "char" || line == "boolean" || line == "void" || line == "true" || line == "false" || line == "null" || line == "this" || line == "let" || line == "do" || line == "if" || line == "else" || line == "while" || line == "return")
+    {
+        return true;
+    }
+    return false;
 }
 vector<string> JackTokenizer::appendStringLiterals(vector<string> tokens)
 {
@@ -220,21 +269,28 @@ vector<string> JackTokenizer::appendStringLiterals(vector<string> tokens)
     }
     return tokens;
 }
-bool JackTokenizer::isKeyword(string line)
+string JackTokenizer::tokenType()
 {
-    if (line == "class" || line == "constructor" || line == "function" || line == "method" || line == "field" || line == "static" || line == "var" || line == "int" || line == "char" || line == "boolean" || line == "void" || line == "true" || line == "false" || line == "null" || line == "this" || line == "let" || line == "do" || line == "if" || line == "else" || line == "while" || line == "return")
+    if (isKeyword(currentToken))
     {
-        return true;
+        return "KEYWORD";
     }
-    return false;
-}
-bool JackTokenizer::isSymbol(string line)
-{
-    if(line == "{" || line == "}" || line == "(" || line == ")" || line == "[" || line == "]" || line == "." || line == "," || line == ";" || line == "+" || line == "-" || line == "*" || line == "/" || line == "&" || line == "|" || line == "<" || line == ">" || line == "=" || line == "~")
+    else if (isSymbol(currentToken))
     {
-        return true;
+        return "SYMBOL";
     }
-    return false;
+    else if (currentToken.find('"') != string::npos)
+    {
+        return "STRING_CONST";
+    }
+    else if(isIntConstant(currentToken))
+    {
+        return "INT_CONST";
+    }
+    else
+    {
+        return "IDENTIFIER";
+    }
 }
 bool JackTokenizer::isIntConstant(string line)
 {
@@ -247,77 +303,25 @@ bool JackTokenizer::isIntConstant(string line)
     }
     return true;
 }
-void JackTokenizer::clean() //remove comments and unnecessary whitespace lines
+string JackTokenizer::keyWord()
 {
-    string allLines = "";
-
-    jackLines = removeComments(jackLines);
-    
-    for (int i = 0; i < jackLines.size(); i++) //concatenate all of the cleaned lines into a single string to be split into unique tokens
-    {
-        allLines += jackLines[i];
-    }
-    
-    jackTokens = Tokenize(allLines);
-    
-    return;
+    return currentToken;
+}
+char JackTokenizer::symbol()
+{
+    return currentToken[0];
+}
+string JackTokenizer::identifier()
+{  
+    return currentToken;
+}
+int JackTokenizer::intVal()
+{
+    return stoi(currentToken);
+}
+string JackTokenizer::stringVal()
+{
+    return currentToken.substr(1, currentToken.length()-2); //ignore double quotes
 }
 
-vector<string> JackTokenizer::Tokenize(string line)
-{
-    int i = 0;
-    string tempString = "";
-    vector<string> tokens;
 
-    for (int i = 0; i < line.length(); i++)
-    {
-        if (!isSymbol(line.substr(i+1, 1)) && line.substr(i+1, 1) != " ") //if the i+1th character is not a symbol or space
-        {
-            if (!isspace(line[i])) //iteratively add all non space characters into a temporary string variable, and check if it becomes a unique token
-            {
-                tempString += line[i];
-
-                if (isKeyword(tempString) && isspace(line[i+1]))
-                {
-                    tokens.push_back(tempString);
-                    tempString = "";
-                }
-                else if(isSymbol(tempString))
-                {
-                    tokens.push_back(tempString);
-                    tempString = "";
-                }
-
-            }
-        }
-        else //if the i+1th character is a symbol or space, then save all of the non-space characters up to that symbol as a new token.
-        {
-            tempString += line[i];
-
-                if (tempString != " " && !tempString.empty())
-                {
-                    tokens.push_back(tempString);
-                }
-
-            tempString = "";
-        }
-        
-    }
-    
-    /*each space following an opening double quote will mark 
-    the beginning of a new word, which will be tokenized with 
-    all following words until the end of the double quote*/
-    tokens = appendStringLiterals(tokens); 
-
-    for (int i = 0; i < tokens.size(); i++) //remove the blank elements from the vector
-    {
-        string temp = tokens[i];
-        if (isspace(temp[0]) | temp == " ")
-        {
-            tokens.erase(tokens.begin() + i);
-            i--;
-        }    
-    }
-    
-    return tokens;
-}

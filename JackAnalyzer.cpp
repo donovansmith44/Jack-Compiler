@@ -33,6 +33,7 @@ string getJackFileName(string jackFile)
     {
         jackFile.erase(0, jackFile.find('/')+1);
     }
+    
     if (jackFile.find('.') != string::npos)
     {
         jackFile.erase(jackFile.find('.'), jackFile.length() - jackFile.find('.'));
