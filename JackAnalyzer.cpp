@@ -58,7 +58,7 @@ int main(int argc, char* argv[]){
     }
     catch(const exception& directoryNameNotFound)
     {
-        cout << "There was an error openinng your files. Does the directory exist and contain .jack files? Run the program again." << endl;
+        cout << "There was an error opening your files. Does the directory exist and contain .jack files?" << endl;
     }
     return 0;
 }
