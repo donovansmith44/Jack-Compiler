@@ -256,7 +256,7 @@ using namespace std;
             else if (myTokenizer.keyWord() == "if") //the currentToken should be the first token after the statement's closing '}' after the if statement compiles
             {
                 compileIf();
-                
+                myTokenizer.advance();
             }
             else if (myTokenizer.keyWord() == "do") //the currentToken should be ';' after the do statement compiles
             {
@@ -287,6 +287,9 @@ using namespace std;
     }
     void CompilationEngine::compileDo() 
     {
+        /*
+        'do' 'function-or-method-call' ';'
+        */
         string subroutineCaller = "";
         string subroutineCallerType = "";
         string subroutine = "";
@@ -359,6 +362,11 @@ using namespace std;
     }
     void CompilationEngine::compileLet()
     {
+        /*
+        'let' 'variable' '=' expression ';' 
+        or
+        'let' 'variable' '[' expression ']' '=' expression ';' 
+        */
         bool accessingArray = false;
         string varToSet = "";
 
@@ -409,6 +417,12 @@ using namespace std;
     }
     void CompilationEngine::compileWhile()
     {
+        /*
+        'while' '(' expression ')'
+        '{'
+            statements
+        '}'
+        */
         string WHILE_EXP = "WHILE_EXP" + to_string(whileLabels);
         string WHILE_END = "WHILE_END" + to_string(whileLabels);
         whileLabels++;
@@ -440,6 +454,9 @@ using namespace std;
     }
     void CompilationEngine::compileReturn()
     {
+        /*
+        'return' '(' expression ')' ';' 
+        */
         myTokenizer.advance();
 
         if (myTokenizer.symbol() == ';')
@@ -457,6 +474,9 @@ using namespace std;
     }
     void CompilationEngine::compileIf()
     {
+        /*
+        'if' '(' expression ')' '{' statements '}' 
+        */
         string IF_TRUE = "IF_TRUE" + to_string(ifLabels);
         string IF_FALSE = "IF_FALSE" + to_string(ifLabels);
         ifLabels++;
@@ -466,8 +486,11 @@ using namespace std;
         myTokenizer.advance(); // '('
 
         compileExpression();
+
         myTokenizer.advance();
+
         myVMWriter.writeArithmetic("not");
+
         myVMWriter.writeIf(IF_FALSE);
 
         myTokenizer.advance(); // ')'
@@ -477,34 +500,47 @@ using namespace std;
         compileStatements();
         myVMWriter.writeGoto(IF_TRUE);
 
-        myTokenizer.advance();  // '}' or 'else's
-
         myVMWriter.writeLabel(IF_FALSE);
         
-        if (myTokenizer.keyWord() == "else")
+        /*
+        'else' '{' statements '}'
+        */
+        if (myTokenizer.getNextToken() == "else")
         {
+            myTokenizer.advance();  // '}'
+
             myTokenizer.advance();
             
             myTokenizer.advance(); // '{'
 
             compileStatements();
 
-            myTokenizer.advance(); // '}'
+            //myTokenizer.advance(); // '}'
         }
+
         myVMWriter.writeLabel(IF_TRUE);
+
         return;
     }
     void CompilationEngine::compileExpression()
     {
+        /*
+        'term'
+        or 
+        'term' 'operator' 'term' 
+        */
         compileTerm();
         
         if (myTokenizer.getNextToken() == "+" | myTokenizer.getNextToken() == "-" | myTokenizer.getNextToken() == "*" | myTokenizer.getNextToken() == "/" | myTokenizer.getNextToken() == "&" | myTokenizer.getNextToken() == "|" | myTokenizer.getNextToken() == "<" | myTokenizer.getNextToken() == ">" | myTokenizer.getNextToken() == "=")
         {
-            currentSymbols.push_back(myTokenizer.getNextToken());
+            currentSymbols.push_back(myTokenizer.getNextToken()); //currentSymbols is a class-level vector 
+
             myTokenizer.advance();
  
             myTokenizer.advance();
+
             compileTerm();
+
             if (currentSymbols.back() == "+")
             {
                 myVMWriter.writeArithmetic("add");
@@ -556,14 +592,12 @@ using namespace std;
         }
         else if (myTokenizer.tokenType() == "STRING_CONST")
         {
-            string stringConstant = myTokenizer.stringVal();
-
-            myVMWriter.writePush("CONST", stringConstant.length());
+            myVMWriter.writePush("CONST", myTokenizer.stringVal().length());
             myVMWriter.writeCall("String.new", 1);
 
-            for (int i = 0; i < stringConstant.length(); i++)
+            for (int i = 0; i < myTokenizer.stringVal().length(); i++)
             {
-                myVMWriter.writePush("CONST", int(stringConstant[i]));
+                myVMWriter.writePush("CONST", int(myTokenizer.stringVal()[i]));
                 myVMWriter.writeCall("String.appendChar", 2);
             }
         }
@@ -571,7 +605,7 @@ using namespace std;
         {
             myVMWriter.writePush("CONST", 0);
         }
-        else if (myTokenizer.keyWord() == "true")
+        else if (myTokenizer.keyWord() == "true") //"true" is represented as -1 at the assembly level.
         {
             myVMWriter.writePush("CONST", 1);
             myVMWriter.writeArithmetic("neg");
@@ -654,23 +688,23 @@ using namespace std;
                 }
             }
         }
-        else if (myTokenizer.symbol() == '-' || myTokenizer.symbol() == '~') //unaryop term
+        else if (myTokenizer.symbol() == '-' || myTokenizer.symbol() == '~') //unaryop term (negations and nots)
         {
-            string currentUnaryOp = ""; 
-
-            currentUnaryOp = myTokenizer.symbol();
+            char currentUnaryOp = myTokenizer.symbol();
+            
             myTokenizer.advance();
 
             compileTerm();
-            if (currentUnaryOp == "-")
+
+            switch (currentUnaryOp)
             {
+            case '-':
                 myVMWriter.writeArithmetic("neg");
-            }
-            else
-            {
+                break;
+            default:
                 myVMWriter.writeArithmetic("not");
+                break;
             }
-            
         }
         else if (myTokenizer.symbol() == '(') //'(' expression ')'
         {
