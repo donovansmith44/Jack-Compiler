@@ -7,7 +7,7 @@ Please note that this compiler is not currently equipped with error-handling mec
 and assumes that programs are have valid syntax. Therefore, bugs must be caught during and after runtime.
 
 Array, Memory, Math, Keyboard, Screen, String, and Sys with ".vm" extensions are classes
-provided by the Jack OS, comprising the Jack standard library.
+provided by the Jack OS, and make up the Jack standard library.
  
 To compile:
 g++ -std=c++17 CompilationEngine.cpp VMWriter.cpp JackTokenizer.cpp JackAnalyzer.cpp SymbolTable.cpp
