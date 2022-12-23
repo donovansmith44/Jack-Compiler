@@ -691,7 +691,7 @@ using namespace std;
         else if (myTokenizer.symbol() == '-' || myTokenizer.symbol() == '~') //unaryop term (negations and nots)
         {
             char currentUnaryOp = myTokenizer.symbol();
-            
+
             myTokenizer.advance();
 
             compileTerm();
@@ -714,7 +714,7 @@ using namespace std;
         }
         else
         {
-
+            //testing gitignore
         }        
 
         return;
