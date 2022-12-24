@@ -514,8 +514,6 @@ using namespace std;
             myTokenizer.advance(); // '{'
 
             compileStatements();
-
-            //myTokenizer.advance(); // '}'
         }
 
         myVMWriter.writeLabel(IF_TRUE);
@@ -714,7 +712,7 @@ using namespace std;
         }
         else
         {
-            
+
         }        
 
         return;
