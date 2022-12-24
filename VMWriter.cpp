@@ -92,10 +92,7 @@ void VMWriter::writePop(string segment, int index)
     {
         vmFile << "pop temp " << index << endl;
     }
-    else
-    {
-        return;
-    }
+    
     return;
 }
 void VMWriter::writeArithmetic(string command)
