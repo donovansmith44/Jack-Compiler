@@ -4,7 +4,7 @@ The purpose of this compiler is to translate programs written in the Jack progra
 into low-level byte code, resembling that of the JVM.
 
 Please note that this compiler is not currently equipped with error-handling mechanisms,
-and assumes that programs are have valid syntax. Therefore, debugging must occur during and after runtime.
+and assumes that programs are error-free. Therefore, debugging must occur during and after runtime.
 
 Array, Memory, Math, Keyboard, Screen, String, and Sys with ".vm" extensions are classes
 provided by the Jack OS, and make up the Jack standard library.
